@@ -25,4 +25,4 @@ jobs:
         env:
           SUPABASE_URL: os.environ.get("SUPABASE_URL")
           SUPABASE_KEY: os.environ.get("SUPABASE_KEY")
-        run: python scraper_agrobservex.py #este es el nombre actual del archivo python
+        run: python monitor_agrotech_v1.py #este es el nombre actual del archivo python
