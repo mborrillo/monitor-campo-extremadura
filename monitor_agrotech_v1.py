@@ -5,10 +5,14 @@ from bs4 import BeautifulSoup
 from supabase import create_client, Client
 from datetime import datetime
 
-# --- CONFIGURACIÓN DE CONEXIÓN ---
-SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6dWN2c3JlbWF2a2lrZWNzcHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODIzMTUsImV4cCI6MjA4NjU1ODMxNX0.3J-whUICeuP-IgrVJ4J7t7ZpawqVn8arGSboNIZHetw" # Asegúrate de mantener la Service Role Key
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- CONFIGURACIÓN DE CONEXIÓN, Aqui se leen las ariables configuradas en Settings > Secrets---
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("❌ Error: No se encontraron las variables de entorno.")
+else:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_precios_multi_sector():
     print(f"🚀 Generando reporte multisectorial: {datetime.now().strftime('%d/%m/%Y')}")
@@ -59,4 +63,5 @@ def obtener_precios_multi_sector():
         print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
+
     obtener_precios_multi_sector()
