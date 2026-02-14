@@ -4,9 +4,9 @@ from datetime import datetime
 import re
 import sys
 
-# 1. Capturamos variables RAW (sin limpiar aún)
-url_raw = os.environ.get("SUPABASE_URL", "https://zzucvsremavkikecsptg.supabase.co")
-key_raw = os.environ.get("SUPABASE_KEY", "sb_publishable_bnh1EYxSi_Omwtm-THae7A_lcCldwDY")
+# 1. Capturamos variables RAW (sin limpiar aún) SUPABASE_URL SUPABASE_KEY
+url_raw = os.environ.get("https://zzucvsremavkikecsptg.supabase.co")
+key_raw = os.environ.get("sb_publishable_bnh1EYxSi_Omwtm-THae7A_lcCldwDY")
 
 # 2. DEBUG EXTREMO: Ver EXACTAMENTE qué llega
 print("=" * 70)
@@ -172,4 +172,5 @@ def obtener_precios_multi_sector():
 
 if __name__ == "__main__":
     obtener_precios_multi_sector()
+
 
