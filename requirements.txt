@@ -1,4 +1,12 @@
+# Requirements para Monitor Campo Extremadura
+# Versiones específicas para evitar conflictos
+
+# Supabase client - usar versión estable
 supabase==2.3.4
+
+# Dependencias de supabase
 httpx==0.26.0
 python-dotenv==1.0.0
+
+# Utilidades
 requests==2.31.0
