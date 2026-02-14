@@ -1,7 +1,7 @@
 import os
 import requests
-#import pandas as pd
-#from bs4 import BeautifulSoup
+import pandas as pd
+from bs4 import BeautifulSoup
 from supabase import create_client, Client
 from datetime import datetime
 
@@ -65,4 +65,5 @@ def obtener_precios_multi_sector():
 if __name__ == "__main__":
 
     obtener_precios_multi_sector()
+
 
