@@ -4,9 +4,9 @@ from datetime import datetime
 import re
 import sys
 
-# 1. Capturamos variables RAW (sin limpiar aún) SUPABASE_URL SUPABASE_KEY
-url_raw = os.environ.get("https://zzucvsremavkikecsptg.supabase.co")
-key_raw = os.environ.get("sb_publishable_bnh1EYxSi_Omwtm-THae7A_lcCldwDY")
+# 1. Capturamos variables RAW (sin limpiar aún)  
+url_raw = os.environ.get("SUPABASE_URL","https://zzucvsremavkikecsptg.supabase.co")
+key_raw = os.environ.get("SUPABASE_KEY","sb_publishable_bnh1EYxSi_Omwtm-THae7A_lcCldwDY")
 
 # 2. DEBUG EXTREMO: Ver EXACTAMENTE qué llega
 print("=" * 70)
@@ -71,7 +71,8 @@ print("=" * 70)
 # INTENTO 1: Método estándar
 print("\n🔹 INTENTO 1: Método estándar")
 try:
-    supabase: Client = create_client(url, key)
+    supabase: Client = create_client("https://zzucvsremavkikecsptg.supabase.co", "sb_publishable_bnh1EYxSi_Omwtm-THae7A_lcCldwDY")
+    #supabase: Client = create_client(url, key)
     print("✅ ÉXITO con método estándar")
 except Exception as e:
     print(f"❌ Falló método estándar: {e}")
@@ -172,5 +173,6 @@ def obtener_precios_multi_sector():
 
 if __name__ == "__main__":
     obtener_precios_multi_sector()
+
 
 
