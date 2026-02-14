@@ -2,9 +2,8 @@ name: Actualizacion Diaria Monitor Campo
 
 on:
   schedule:
-    # Se ejecuta a las 07:00 AM (hora España aprox.) de lunes a viernes
     - cron: '0 6 * * 1-5'
-  workflow_dispatch: # Permite que tú lo ejecutes a mano cuando quieras
+  workflow_dispatch:
 
 jobs:
   run_scraper:
@@ -19,31 +18,7 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar librerias
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip list | grep supabase
-        
-      - name: Verificar Secrets (sin exponer valores)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: |
-          echo "Verificando que los secrets lleguen correctamente..."
-          if [ -z "$SUPABASE_URL" ]; then
-            echo "ERROR: SUPABASE_URL está vacío"
-            exit 1
-          fi
-          if [ -z "$SUPABASE_KEY" ]; then
-            echo "ERROR: SUPABASE_KEY está vacío"
-            exit 1
-          fi
-          echo "URL length: ${#SUPABASE_URL}"
-          echo "KEY length: ${#SUPABASE_KEY}"
-          echo "Secrets OK - procediendo..."
+        run: pip install supabase requests pandas beautifulsoup4
 
       - name: Ejecutar Monitor
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python monitor_agrotech_v1.py
