@@ -1,22 +1,58 @@
 import os
 from supabase import create_client, Client
 from datetime import datetime
+import re
 
-# 1. Capturamos y limpiamos las variables (evita espacios invisibles)
-url = os.environ.get("SUPABASE_URL", "").strip()
-key = os.environ.get("SUPABASE_KEY", "").strip()
+# 1. Capturamos y limpiamos las variables (evita espacios invisibles y comillas)
+url = os.environ.get("SUPABASE_URL", "").strip().strip('"').strip("'")
+key = os.environ.get("SUPABASE_KEY", "").strip().strip('"').strip("'")
 
-# 2. Verificación de seguridad
+# 2. DEBUG: Mostrar información de las variables (SIN mostrar valores sensibles completos)
+print("=" * 60)
+print("🔍 DIAGNÓSTICO DE VARIABLES DE ENTORNO")
+print("=" * 60)
+print(f"URL recibida: {url[:30]}{'...' if len(url) > 30 else ''}")
+print(f"Longitud URL: {len(url)} caracteres")
+print(f"KEY recibida: {key[:20]}{'...' if len(key) > 20 else ''}")
+print(f"Longitud KEY: {len(key)} caracteres")
+
+# 3. Verificación de seguridad
 if not url or url == "None":
     print("❌ ERROR: La URL de Supabase no llega desde GitHub Secrets.")
+    print("👉 Verifica que SUPABASE_URL esté configurado en GitHub Secrets")
     exit(1)
 
-# 3. Inicialización única del cliente
+if not key or key == "None":
+    print("❌ ERROR: La KEY de Supabase no llega desde GitHub Secrets.")
+    print("👉 Verifica que SUPABASE_KEY esté configurado en GitHub Secrets")
+    exit(1)
+
+# 4. Validar formato de URL
+url_pattern = re.compile(r'^https://[a-zA-Z0-9-]+\.supabase\.co$')
+if not url_pattern.match(url):
+    print("❌ ERROR: Formato de URL inválido")
+    print(f"   URL recibida: '{url}'")
+    print("   ✅ Formato correcto: https://tuproyecto.supabase.co")
+    print("   ❌ NO incluyas: /rest/v1, espacios, comillas extra, barras finales")
+    print("\n📋 PASOS PARA CORREGIR:")
+    print("   1. Ve a tu proyecto en Supabase")
+    print("   2. Settings → API → Project URL")
+    print("   3. Copia SOLO la URL base (ejemplo: https://abcdefg.supabase.co)")
+    print("   4. Ve a GitHub → Settings → Secrets → Edita SUPABASE_URL")
+    print("   5. Pega la URL SIN espacios ni comillas")
+    exit(1)
+
+# 5. Inicialización única del cliente
 try:
     supabase: Client = create_client(url, key)
-    print("✅ Conexión con Supabase establecida.")
+    print("✅ Conexión con Supabase establecida correctamente.")
+    print("=" * 60)
 except Exception as e:
     print(f"❌ Error crítico de conexión: {e}")
+    print("\n📋 POSIBLES CAUSAS:")
+    print("   - URL incorrecta (debe ser https://tuproyecto.supabase.co)")
+    print("   - KEY incorrecta (revisa que sea la 'anon/public' key)")
+    print("   - Problemas de red o permisos")
     exit(1)
 
 def obtener_precios_multi_sector():
