@@ -28,6 +28,6 @@ jobs:
 
       - name: Ejecutar Monitor
         env:
-          SUPABASE_URL: os.environ.get("SUPABASE_URL")
-          SUPABASE_KEY: os.environ.get("SUPABASE_KEY")
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python monitor_agrotech_v1.py #este es el nombre actual del archivo python
