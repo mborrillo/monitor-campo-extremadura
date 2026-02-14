@@ -20,8 +20,5 @@ jobs:
       - name: Instalar librerias
         run: pip install supabase requests pandas beautifulsoup4
 
-      - name: Ejecutar Monitor de Precios
-        run: python monitor_agrotech_v1.py
-        
-      - name: Ejecutar Monitor de Clima
-        run: python clima_monitor.py.py
+      - name: Ejecutar Monitores
+        run: python monitor_agrotech_v1.py, python clima_monitor.py.py
