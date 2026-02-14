@@ -21,6 +21,6 @@ jobs:
         run: pip install supabase requests pandas beautifulsoup4
 
       - name: Ejecutar Monitores
-        run: 
+        run: | 
           python monitor_agrotech_v1.py 
           python clima_monitor.py.py
