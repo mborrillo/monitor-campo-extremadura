@@ -1,24 +1,26 @@
 import os
-import requests
-import pandas as pd
-from bs4 import BeautifulSoup
 from supabase import create_client, Client
 from datetime import datetime
 
-# --- CONFIGURACIÓN DE CONEXIÓN, Aqui se leen las ariables configuradas en Settings > Secrets---
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+# 1. Capturamos y limpiamos las variables (evita espacios invisibles)
+url = os.environ.get("SUPABASE_URL", "").strip()
+key = os.environ.get("SUPABASE_KEY", "").strip()
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("❌ Error: No se encontraron las variables de entorno.")
-else:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# 2. Verificación de seguridad
+if not url or url == "None":
+    print("❌ ERROR: La URL de Supabase no llega desde GitHub Secrets.")
+    exit(1)
+
+# 3. Inicialización única del cliente
+try:
+    supabase: Client = create_client(url, key)
+    print("✅ Conexión con Supabase establecida.")
+except Exception as e:
+    print(f"❌ Error crítico de conexión: {e}")
+    exit(1)
 
 def obtener_precios_multi_sector():
-    print(f"🚀 Generando reporte multisectorial: {datetime.now().strftime('%d/%m/%Y')}")
-    
-    # Definimos los diccionarios de datos reales de las últimas sesiones 
-    # (Esto lo automatizaremos sector por sector conforme mapeemos las URLs)
+    print(f"🚀 Iniciando reporte: {datetime.now().strftime('%d/%m/%Y')}")
     
     sectores = {
         "Aceite de Oliva": [
@@ -42,11 +44,12 @@ def obtener_precios_multi_sector():
     }
 
     registros_totales = []
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
     
     for sector, productos in sectores.items():
         for p in productos:
             registros_totales.append({
-                "fecha": datetime.now().strftime("%Y-%m-%d"),
+                "fecha": fecha_hoy,
                 "sector": sector,
                 "producto": p["prod"],
                 "precio_min": p["min"],
@@ -56,14 +59,11 @@ def obtener_precios_multi_sector():
             })
 
     try:
-        # Inserción masiva (Bulk insert) - Mucho más eficiente
+        # Inserción masiva
         res = supabase.table("precios_agricolas").insert(registros_totales).execute()
-        print(f"✅ Monitor expandido: {len(res.data)} nuevos registros en 4 sectores.")
+        print(f"✅ Éxito: {len(res.data)} registros insertados en el historial.")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Error al insertar datos: {e}")
 
 if __name__ == "__main__":
-
     obtener_precios_multi_sector()
-
-
