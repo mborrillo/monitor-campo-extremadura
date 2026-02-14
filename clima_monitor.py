@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 # --- CONFIGURACIÓN ---
 SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"
 SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG" 
-AEMET_API_KEY = "TU_API_KEY_AQUI" # Asegúrate de poner tu clave aquí
+AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLCJqdGkiOiI1YzRjYzlkZC04OTI0LTQzZjgtOTI1OC1hZWZiZjRhOWIzNGMiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3MTA4MjI3MSwidXNlcklkIjoiNWM0Y2M5ZGQtODkyNC00M2Y4LTkyNTgtYWVmYmY0YTliMzRjIiwicm9sZSI6IiJ9.EQqSYmGFYaCQvhzPv2gxYHkwa1Zyqr9sDLRCG8xLaV4" # Asegúrate de poner tu clave aquí
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
