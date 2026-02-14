@@ -2,9 +2,8 @@ name: Actualizacion Diaria Monitor Campo
 
 on:
   schedule:
-    # Se ejecuta a las 07:00 AM (hora España aprox.) de lunes a viernes
     - cron: '0 6 * * 1-5'
-  workflow_dispatch: # Permite que tú lo ejecutes a mano cuando quieras
+  workflow_dispatch:
 
 jobs:
   run_scraper:
@@ -19,12 +18,7 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar librerias
-        run: pip install -r requirements.txt
-        
-       #- name: Instalar librerias
-       # run: 
-       #   python -m pip install --upgrade pip
-       #   pip install supabase requests pandas beautifulsoup4 python-dotenv
+        run: pip install supabase requests pandas beautifulsoup4 python-dotenv
 
       - name: Ejecutar Monitor
         env:
