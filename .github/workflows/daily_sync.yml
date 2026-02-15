@@ -25,4 +25,3 @@ jobs:
 
       - name: Ejecutar clima
         run: python clima_monitor.py
-        
