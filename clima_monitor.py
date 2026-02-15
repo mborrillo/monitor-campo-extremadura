@@ -2,70 +2,167 @@ import os
 import requests
 from supabase import create_client, Client
 from datetime import datetime, timedelta
+import sys
 
 # --- CONFIGURACIÓN ---
 SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"
 SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG" 
-AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLCJqdGkiOiI1YzRjYzlkZC04OTI0LTQzZjgtOTI1OC1hZWZiZjRhOWIzNGMiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3MTA4MjI3MSwidXNlcklkIjoiNWM0Y2M5ZGQtODkyNC00M2Y4LTkyNTgtYWVmYmY0YTliMzRjIiwicm9sZSI6IiJ9.EQqSYmGFYaCQvhzPv2gxYHkwa1Zyqr9sDLRCG8xLaV4" # Pon tu clave aquí
+AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLCJqdGkiOiI1YzRjYzlkZC04OTI0LTQzZjgtOTI1OC1hZWZiZjRhOWIzNGMiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3MTA4MjI3MSwidXNlcklkIjoiNWM0Y2M5ZGQtODkyNC00M2Y4LTkyNTgtYWVmYmY0YTliMzRjIiwicm9sZSI6IiJ9.EQqSYmGFYaCQvhzPv2gxYHkwa1Zyqr9sDLRCG8xLaV4"
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Inicializar cliente Supabase
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("✓ Conexión con Supabase establecida")
+except Exception as e:
+    print(f"✗ Error al conectar con Supabase: {e}")
+    sys.exit(1)
 
 def obtener_clima_extremadura():
-    print(f"🌦️ Iniciando Monitor de Clima: {datetime.now()}")
+    """
+    Obtiene datos climáticos de AEMET para Badajoz y Cáceres
+    y los almacena en Supabase
+    """
+    print(f"=== Monitor de Clima - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
     
-    # Estaciones: 4452 (Badajoz), 3431 (Cáceres)
-    estaciones = {"Badajoz": "4452", "Caceres": "3431"}
+    # Estaciones meteorológicas de Extremadura
+    estaciones = {
+        "Badajoz": "4452",
+        "Caceres": "3431"
+    }
+    
     headers = {'api_key': AEMET_API_KEY}
+    datos_procesados = {}
     
-    registros_clima = []
-
     for ciudad, id_estacion in estaciones.items():
-        print(f"🔍 Consultando estación {ciudad} ({id_estacion})...")
+        print(f"\n→ Consultando estación {ciudad} (ID: {id_estacion})...")
+        
         url = f"https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/{id_estacion}"
         
         try:
-            res = requests.get(url, headers=headers)
-            res_json = res.json()
+            # Primera petición a AEMET
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            res_json = response.json()
             
             if res_json.get('estado') == 200:
+                # Obtener URL de descarga de datos
                 url_descarga = res_json.get('datos')
-                datos = requests.get(url_descarga).json()
                 
-                # AEMET devuelve las últimas 24 horas de registros cada 15-60 min
-                # Vamos a agrupar por fecha para obtener los valores del día
-                for d in datos:
-                    fecha_completa = d.get('fth') # Formato: 2026-02-14T10:00:00
-                    if not fecha_completa: continue
+                if not url_descarga:
+                    print(f"  ✗ No se recibió URL de descarga")
+                    continue
+                
+                # Segunda petición para obtener datos reales
+                datos_response = requests.get(url_descarga, timeout=10)
+                datos_response.raise_for_status()
+                datos = datos_response.json()
+                
+                print(f"  ✓ Recibidas {len(datos)} lecturas")
+                
+                # Procesar datos - agrupar por fecha para obtener máx/mín del día
+                for lectura in datos:
+                    fecha_completa = lectura.get('fint')  # Fecha fin de intervalo
+                    if not fecha_completa:
+                        continue
                     
-                    fecha_solo_dia = fecha_completa.split('T')[0]
+                    # Extraer solo la fecha (sin hora)
+                    fecha_str = fecha_completa.split('T')[0]
                     
-                    # Guardamos la lectura si tiene datos de temperatura o lluvia
-                    registros_clima.append({
-                        "fecha": fecha_solo_dia,
-                        "estacion": ciudad,
-                        "temp_max": d.get('ta'),
-                        "temp_min": d.get('ta'),
-                        "precipitacion": d.get('prec', 0)
-                    })
+                    # Crear clave única por ciudad y fecha
+                    clave = f"{ciudad}_{fecha_str}"
+                    
+                    # Inicializar si no existe
+                    if clave not in datos_procesados:
+                        datos_procesados[clave] = {
+                            "fecha": fecha_str,
+                            "estacion": ciudad,
+                            "temp_max": None,
+                            "temp_min": None,
+                            "precipitacion": 0.0
+                        }
+                    
+                    # Actualizar temperatura máxima
+                    temp_actual = lectura.get('ta')
+                    if temp_actual is not None:
+                        temp_actual = float(temp_actual)
+                        if datos_procesados[clave]["temp_max"] is None:
+                            datos_procesados[clave]["temp_max"] = temp_actual
+                        else:
+                            datos_procesados[clave]["temp_max"] = max(
+                                datos_procesados[clave]["temp_max"], 
+                                temp_actual
+                            )
+                        
+                        # Actualizar temperatura mínima
+                        if datos_procesados[clave]["temp_min"] is None:
+                            datos_procesados[clave]["temp_min"] = temp_actual
+                        else:
+                            datos_procesados[clave]["temp_min"] = min(
+                                datos_procesados[clave]["temp_min"], 
+                                temp_actual
+                            )
+                    
+                    # Acumular precipitación
+                    precip = lectura.get('prec')
+                    if precip is not None and precip != 'Ip':  # 'Ip' = inapreciable
+                        try:
+                            datos_procesados[clave]["precipitacion"] += float(precip)
+                        except (ValueError, TypeError):
+                            pass
+            
+            elif res_json.get('estado') == 404:
+                print(f"  ✗ Estación no encontrada")
+            elif res_json.get('estado') == 429:
+                print(f"  ✗ Límite de peticiones excedido")
             else:
-                print(f"⚠️ AEMET respondió: {res_json.get('descripcion')}")
-        except Exception as e:
-            print(f"❌ Error en {ciudad}: {e}")
-
-    if registros_clima:
-        # Usamos un diccionario para quedarnos solo con el valor más alto/bajo por día y ciudad
-        # Esto limpia los datos antes de enviarlos a Supabase
-        print(f"📦 Procesando {len(registros_clima)} lecturas temporales...")
+                print(f"  ✗ AEMET respondió con estado {res_json.get('estado')}: {res_json.get('descripcion')}")
         
-        # Intentamos insertar (upsert) en bloques para no saturar
-        try:
-            # Upsert para evitar duplicados si la tabla tiene el índice único que creamos
-            res = supabase.table("datos_clima").upsert(registros_clima).execute()
-            print(f"✅ ¡Éxito! Registros procesados en Supabase.")
+        except requests.exceptions.Timeout:
+            print(f"  ✗ Timeout al consultar {ciudad}")
+        except requests.exceptions.RequestException as e:
+            print(f"  ✗ Error de red en {ciudad}: {e}")
         except Exception as e:
-            print(f"❌ Error Supabase al insertar: {e}")
+            print(f"  ✗ Error inesperado en {ciudad}: {e}")
+    
+    # Insertar datos en Supabase
+    if datos_procesados:
+        registros = list(datos_procesados.values())
+        print(f"\n→ Procesando {len(registros)} registros diarios únicos...")
+        
+        try:
+            # Usar upsert para evitar duplicados
+            # Requiere índice UNIQUE(fecha, estacion) en la tabla
+            result = supabase.table("datos_clima").upsert(registros).execute()
+            
+            if result.data:
+                print(f"✓ Éxito: {len(result.data)} registros guardados en Supabase")
+                
+                # Mostrar resumen
+                for reg in registros:
+                    temp_info = ""
+                    if reg["temp_max"] is not None and reg["temp_min"] is not None:
+                        temp_info = f"Temp: {reg['temp_min']:.1f}°C - {reg['temp_max']:.1f}°C"
+                    precip_info = f"Precip: {reg['precipitacion']:.1f}mm" if reg["precipitacion"] > 0 else ""
+                    print(f"  • {reg['estacion']} ({reg['fecha']}): {temp_info} {precip_info}")
+            else:
+                print("✗ No se insertaron datos")
+        
+        except Exception as e:
+            print(f"✗ Error al insertar en Supabase: {e}")
+            sys.exit(1)
     else:
-        print("Empty: AEMET no devolvió ninguna lectura para procesar.")
+        print("\n✗ No se obtuvieron datos válidos de AEMET")
+        sys.exit(1)
+    
+    print("\n=== Monitor completado ===")
 
 if __name__ == "__main__":
-    obtener_clima_extremadura()
+    try:
+        obtener_clima_extremadura()
+    except KeyboardInterrupt:
+        print("\n\n✗ Ejecución cancelada por el usuario")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n✗ Error fatal: {e}")
+        sys.exit(1)
