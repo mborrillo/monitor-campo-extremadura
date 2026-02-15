@@ -9,13 +9,17 @@ SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_datos_mercado():
-    print("📈 Consultando Mercados Internacionales...")
+    print("📈 Consultando Panel de Mercados Internacionales Ampliado...")
     
-    # Tickers: ZW=F (Trigo), ZC=F (Maíz), CL=F (Petróleo/Energía)
+    # Mapeo de Tickers estratégicos
     tickers = {
         "Trigo (Chicago)": "ZW=F",
         "Maiz (Chicago)": "ZC=F",
-        "Aceite Vegetal": "ZL=F"
+        "Aceite de Soja": "ZL=F",
+        "Cerdo Magro (Futuros)": "HE=F",
+        "Gasoleo (Diesel)": "HO=F",
+        "Gas Natural (Fertilizantes)": "NG=F",
+        "Euro/Dolar": "EURUSD=X"
     }
     
     registros = []
@@ -24,21 +28,26 @@ def obtener_datos_mercado():
     for nombre, ticker in tickers.items():
         try:
             data = yf.Ticker(ticker)
-            precio = data.fast_info['last_price']
+            # Intentamos obtener el precio de cierre o el último precio disponible
+            precio = data.fast_info.get('last_price')
             
-            registros.append({
-                "fecha": fecha_hoy,
-                "activo": nombre,
-                "precio_cierre": precio,
-                "moneda": "USD"
-            })
-            print(f"✅ {nombre}: {precio}")
+            if precio:
+                registros.append({
+                    "fecha": fecha_hoy,
+                    "activo": nombre,
+                    "precio_cierre": round(float(precio), 4),
+                    "moneda": "USD" if "EURUSD" not in ticker else "Ratio",
+                })
+                print(f"✅ {nombre}: {precio}")
         except Exception as e:
             print(f"❌ Error con {nombre}: {e}")
 
     if registros:
-        supabase.table("mercados_internacionales").insert(registros).execute()
-        print("📊 Datos de mercado guardados en Supabase.")
+        try:
+            supabase.table("mercados_internacionales").upsert(registros).execute()
+            print(f"📊 ¡Éxito! {len(registros)} activos internacionales actualizados.")
+        except Exception as e:
+            print(f"❌ Error al guardar en Supabase: {e}")
 
 if __name__ == "__main__":
     obtener_datos_mercado()
