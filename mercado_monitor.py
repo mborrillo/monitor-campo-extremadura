@@ -13,12 +13,24 @@ def obtener_datos_mercado():
     
     # Mapeo de Tickers estratégicos
     tickers = {
+        # --- Agrícolas (Base Extremeña) ---
         "Trigo (Chicago)": "ZW=F",
         "Maiz (Chicago)": "ZC=F",
         "Aceite de Soja": "ZL=F",
+        "Arroz (Cereal clave en Vegas Bajas)": "ZR=F",
+        
+        # --- Ganadería y Alimentación ---
         "Cerdo Magro (Futuros)": "HE=F",
+        "Ganado Bovino (Feeder Cattle)": "GF=F", # Referencia para terneros
+        "Deoleo (Referente Aceite de Oliva)": "OLE.MC", # Cotizada española clave para el sector olivarero
+        
+        # --- Insumos y Energía ---
         "Gasoleo (Diesel)": "HO=F",
         "Gas Natural (Fertilizantes)": "NG=F",
+        "Solar (Invesco Solar ETF)": "TAN", # Extremadura es potencia en fotovoltaica
+        
+        # --- Otros Sectores Regionales ---
+        "Tabaco (Philip Morris - Ref. Global)": "PM", # Extremadura produce el 90% del tabaco en España
         "Euro/Dolar": "EURUSD=X"
     }
     
