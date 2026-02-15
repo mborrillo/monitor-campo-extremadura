@@ -27,7 +27,15 @@ def obtener_clima_extremadura():
     # Estaciones meteorológicas de Extremadura
     estaciones = {
         "Badajoz": "4452",
-        "Caceres": "3431"
+        "Caceres": "3431",
+        "Merida": "4410",
+        "Plasencia": "3519",
+        "Don Benito": "4358",
+        "Almendralejo": "4446",
+        "Zafra": "4427",
+        "Navalmoral de la Mata": "3411",
+        "Trujillo": "3441",
+        "Hervas": "3469"
     }
     
     headers = {'api_key': AEMET_API_KEY}
