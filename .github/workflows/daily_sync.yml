@@ -26,5 +26,5 @@ jobs:
       - name: Ejecutar clima
         run: python clima_monitor.py
 
-      - name: Ejecutar mercados internacionales
+      - name: Ejecutar mercados
         run: python mercado_monitor.py
