@@ -34,8 +34,7 @@ def obtener_precios_multi_sector():
         "Cereales": [
             {"prod": "Trigo Duro", "min": 0.28, "max": 0.30},
             {"prod": "Maíz", "min": 0.22, "max": 0.24}
-        ]
-
+        ],
         "Sector Ibérico (Lonja de Extremadura)": [
             {"prod": "Cerdos de Bellota (100% Ibérico)", "min": 3.80, "max": 4.10}, # Precios por kg
             {"prod": "Cebo de Campo", "min": 2.45, "max": 2.65},
@@ -52,7 +51,7 @@ def obtener_precios_multi_sector():
         "Ganado Vacuno": [
             {"prod": "Ternero Pastero (200kg)", "min": 3.40, "max": 3.80},
             {"prod": "Vaca de Desvieje", "min": 1.10, "max": 1.45}
-        ],
+        ]
     }
 
     registros_totales = []
@@ -78,5 +77,6 @@ def obtener_precios_multi_sector():
 
 if __name__ == "__main__":
     obtener_precios_multi_sector()
+
 
 
