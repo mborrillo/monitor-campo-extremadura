@@ -23,4 +23,4 @@ jobs:
       - name: Ejecutar Monitores
         run: | 
           python monitor_agrotech_v1.py 
-          python clima_monitor.py.py
+          python clima_monitor.py
