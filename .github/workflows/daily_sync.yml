@@ -22,6 +22,7 @@ jobs:
 
       - name: Ejecutar agrotech
         run: python monitor_agrotech_v1.py
-      
+
       - name: Ejecutar clima
         run: python clima_monitor.py
+        
