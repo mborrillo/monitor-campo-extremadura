@@ -26,5 +26,8 @@ jobs:
       - name: Ejecutar mercados
         run: python mercado_monitor.py
 
+      - name: Ejecutar energia
+        run: python energia_monitor.py
+
       - name: Ejecutar clima
         run: python clima_monitor.py
