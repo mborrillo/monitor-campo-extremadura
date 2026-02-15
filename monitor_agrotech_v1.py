@@ -11,7 +11,7 @@ try:
     print("✅ Conexión con Supabase establecida correctamente.")
 except Exception as e:
     print(f"❌ Error al conectar con Supabase: {e}")
-    exit(1)
+    #exit(1)
 
 def obtener_precios_multi_sector():
     print(f"🚀 Generando reporte: {datetime.now().strftime('%d/%m/%Y')}")
@@ -60,3 +60,4 @@ def obtener_precios_multi_sector():
 
 if __name__ == "__main__":
     obtener_precios_multi_sector()
+
