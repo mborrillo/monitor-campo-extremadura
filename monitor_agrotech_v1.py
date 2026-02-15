@@ -35,6 +35,24 @@ def obtener_precios_multi_sector():
             {"prod": "Trigo Duro", "min": 0.28, "max": 0.30},
             {"prod": "Maíz", "min": 0.22, "max": 0.24}
         ]
+
+        "Sector Ibérico (Lonja de Extremadura)": [
+            {"prod": "Cerdos de Bellota (100% Ibérico)", "min": 3.80, "max": 4.10}, # Precios por kg
+            {"prod": "Cebo de Campo", "min": 2.45, "max": 2.65},
+            {"prod": "Lechones (Base 20kg)", "min": 45.00, "max": 52.00} # Precio por unidad
+        ],
+        "Vegas del Guadiana (Industria)": [
+            {"prod": "Tomate de Industria", "min": 0.13, "max": 0.15}, # Contratos campaña
+            {"prod": "Pimentón de la Vera (Referencia)", "min": 3.80, "max": 4.25}
+        ],
+        "Fruta de Hueso (Campaña)": [
+            {"prod": "Ciruela (Variedades Rojas)", "min": 0.80, "max": 1.10},
+            {"prod": "Cereza del Jerte (Picota)", "min": 2.50, "max": 5.00}
+        ],
+        "Ganado Vacuno": [
+            {"prod": "Ternero Pastero (200kg)", "min": 3.40, "max": 3.80},
+            {"prod": "Vaca de Desvieje", "min": 1.10, "max": 1.45}
+        ],
     }
 
     registros_totales = []
@@ -60,4 +78,5 @@ def obtener_precios_multi_sector():
 
 if __name__ == "__main__":
     obtener_precios_multi_sector()
+
 
