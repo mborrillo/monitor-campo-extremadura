@@ -134,31 +134,26 @@ def obtener_clima_extremadura():
             print(f"  ✗ Error inesperado en {ciudad}: {e}")
     
     # Insertar datos en Supabase
-    if datos_procesados:
-        registros = list(datos_procesados.values())
-        print(f"\n→ Procesando {len(registros)} registros diarios únicos...")
-        
-        try:
-            # Usar upsert para evitar duplicados
-            # Requiere índice UNIQUE(fecha, estacion) en la tabla
-            result = supabase.table("datos_clima").upsert(registros).execute()
+    # Insertar datos en Supabase
+        if datos_procesados:
+            registros = list(datos_procesados.values())
+            print(f"\n→ Procesando {len(registros)} registros diarios únicos...")
             
-            if result.data:
-                print(f"✓ Éxito: {len(result.data)} registros guardados en Supabase")
+            try:
+                # Forzamos el upsert sobre la combinación única de fecha y estación
+                result = supabase.table("datos_clima").upsert(
+                    registros,
+                    on_conflict="fecha, estacion"
+                ).execute()
                 
-                # Mostrar resumen
-                for reg in registros:
-                    temp_info = ""
-                    if reg["temp_max"] is not None and reg["temp_min"] is not None:
-                        temp_info = f"Temp: {reg['temp_min']:.1f}°C - {reg['temp_max']:.1f}°C"
-                    precip_info = f"Precip: {reg['precipitacion']:.1f}mm" if reg["precipitacion"] > 0 else ""
-                    print(f"  • {reg['estacion']} ({reg['fecha']}): {temp_info} {precip_info}")
-            else:
-                print("✗ No se insertaron datos")
-        
-        except Exception as e:
-            print(f"✗ Error al insertar en Supabase: {e}")
-            sys.exit(1)
+                if result.data:
+                    print(f"✓ Éxito: {len(result.data)} registros procesados en Supabase")
+                else:
+                    print("⚠ Los datos ya estaban actualizados (sin cambios).")
+            
+            except Exception as e:
+                print(f"✗ Error al insertar en Supabase: {e}")
+                # No cerramos con sys.exit(1) para que no rompa el flujo de los otros scripts
     else:
         print("\n✗ No se obtuvieron datos válidos de AEMET")
         sys.exit(1)
