@@ -41,12 +41,9 @@ def obtener_precios_luz():
             })
 
         if registros:
-            # Especificamos 'on_conflict' para que sepa que si coinciden fecha y hora, debe actualizar.
-            supabase.table("datos_energia").upsert(
-                registros, 
-                on_conflict="fecha, hora"
-            ).execute()
-            print(f"✅ ¡Éxito! {len(registros)} registros horarios de energía procesados (Insert/Update).")
+            # Usamos upsert con la llave única (fecha, hora)
+            supabase.table("datos_energia").upsert(registros, on_conflict="fecha, hora").execute()
+            print(f"✅ ¡Éxito! {len(registros)} registros horarios de energía procesados.")
 
     except Exception as e:
         print(f"❌ Error en el monitor de energía: {e}")
