@@ -10,40 +10,37 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_precios_luz():
     print("⚡ Consultando Precios de Energía (REE)...")
-    
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    # Endpoint de ESIOS para el PVPC (Indicador 1001)
     url = f"https://api.esios.ree.es/archives/70/download_json?locale=es&date={fecha_hoy}"
     
     try:
         response = requests.get(url)
         if response.status_code != 200:
-            print(f"⚠️ No se pudieron obtener datos de energía para hoy ({response.status_code})")
             return
 
         datos = response.json()
-        registros = []
+        # Usamos un diccionario para asegurar UN SOLO registro por hora
+        registros_dict = {}
         
-        # Extraemos los precios horarios
-        # Nota: REE devuelve los datos en un formato específico dentro de 'PVPC'
         for hora_dato in datos['PVPC']:
-            # El precio viene en €/MWh, lo pasamos a €/kWh dividiendo por 1000
             precio_mwh = float(hora_dato['PCB'].replace(',', '.'))
             precio_kwh = precio_mwh / 1000
-            
-            # La hora viene en formato "00-01", tomamos el primer número
             hora_int = int(hora_dato['Dia'].split('-')[0]) if '-' in hora_dato['Dia'] else 0
             
-            registros.append({
+            # Esto sobrescribe cualquier duplicado antes de ir a la DB
+            registros_dict[hora_int] = {
                 "fecha": fecha_hoy,
                 "hora": hora_int,
                 "precio_kwh": round(precio_kwh, 5)
-            })
+            }
 
-        if registros:
-            # Usamos upsert con la llave única (fecha, hora)
-            supabase.table("datos_energia").upsert(registros, on_conflict="fecha, hora").execute()
-            print(f"✅ ¡Éxito! {len(registros)} registros horarios de energía procesados.")
+        if registros_dict:
+            registros = list(registros_dict.values())
+            supabase.table("datos_energia").upsert(
+                registros, 
+                on_conflict="fecha, hora"
+            ).execute()
+            print(f"✅ ¡Éxito! {len(registros)} precios horarios procesados.")
 
     except Exception as e:
         print(f"❌ Error en el monitor de energía: {e}")
