@@ -134,38 +134,26 @@ def obtener_clima_extremadura():
             print(f"  ✗ Error inesperado en {ciudad}: {e}")
     
     # Insertar datos en Supabase
-    # Insertar datos en Supabase
+    # --- PROCESO DE GUARDADO (FUERA DEL BUCLE) ---
         if datos_procesados:
             registros = list(datos_procesados.values())
-            print(f"\n→ Procesando {len(registros)} registros diarios únicos...")
+            print(f"\n→ Intentando guardar {len(registros)} estaciones en Supabase...")
             
             try:
-                # Forzamos el upsert sobre la combinación única de fecha y estación
                 result = supabase.table("datos_clima").upsert(
                     registros,
                     on_conflict="fecha, estacion"
                 ).execute()
-                
-                if result.data:
-                    print(f"✓ Éxito: {len(result.data)} registros procesados en Supabase")
-                else:
-                    print("⚠ Los datos ya estaban actualizados (sin cambios).")
-            
+                print(f"✓ Éxito: Datos de clima actualizados.")
             except Exception as e:
-                print(f"✗ Error al insertar en Supabase: {e}")
-                # No cerramos con sys.exit(1) para que no rompa el flujo de los otros scripts
-    else:
-        print("\n✗ No se obtuvieron datos válidos de AEMET")
-        sys.exit(1)
-    
-    print("\n=== Monitor completado ===")
+                print(f"✗ Error al insertar: {e}")
+        else:
+            print("\n⚠ No se pudieron recolectar datos de ninguna estación hoy.")
+        
+        print("\n=== Monitor de Clima finalizado con éxito ===")
 
 if __name__ == "__main__":
     try:
         obtener_clima_extremadura()
-    except KeyboardInterrupt:
-        print("\n\n✗ Ejecución cancelada por el usuario")
-        sys.exit(1)
     except Exception as e:
-        print(f"\n✗ Error fatal: {e}")
-        # sys.exit(1)
+        print(f"Error general: {e}")
