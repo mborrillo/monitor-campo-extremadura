@@ -31,41 +31,46 @@ def recuperar_rango_inteligente(dias_atras):
             response = requests.get(url)
             if response.status_code == 200:
                 datos = response.json()
-                dict_limpio = {}
+                pvpc_data = datos.get('PVPC', [])
                 
-                # REVISIÓN CRÍTICA: Extraer las 24 horas correctamente
-                for hora_dato in datos.get('PVPC', []):
-                    # La API a veces trae "01-02" o similar, nos quedamos con la hora de inicio
-                    hora_str = hora_dato.get('Dia', '0-0')
-                    hora_int = int(hora_str.split('-')[0])
-                    
-                    precio_kwh = float(hora_dato['PCB'].replace(',', '.')) / 1000
-                    dict_limpio[hora_int] = precio_kwh
+                if not pvpc_data:
+                    print(f"⚠️ Sin datos para {fecha_str}")
+                    continue
+
+                registros_dia = []
+                precios_solo = []
+
+                # Primero extraemos precios para calcular la media
+                for item in pvpc_data:
+                    p = float(item['PCB'].replace(',', '.')) / 1000
+                    precios_solo.append(p)
                 
-                if len(dict_limpio) > 0:
-                    precios_unicos = list(dict_limpio.values())
-                    media_dia = sum(precios_unicos) / len(precios_unicos)
-                    registros = []
+                media_dia = sum(precios_solo) / len(precios_solo)
+
+                # Ahora procesamos cada hora con su tramo
+                for idx, item in enumerate(pvpc_data):
+                    # Usamos el índice (0 a 23) como hora para evitar el error de formato de fecha
+                    hora_real = idx 
+                    precio = float(item['PCB'].replace(',', '.')) / 1000
+                    vs_media = ((precio - media_dia) / media_dia) * 100
+                    tramo = obtener_tramo_real(hora_real, es_fin_de_semana)
                     
-                    for h, p in dict_limpio.items():
-                        vs_media = ((p - media_dia) / media_dia) * 100
-                        tramo = obtener_tramo_real(h, es_fin_de_semana)
-                        
-                        registros.append({
-                            "fecha": fecha_str, 
-                            "hora": h, 
-                            "precio_kwh": round(p, 5),
-                            "tramo": tramo, 
-                            "vs_media": round(vs_media, 2)
-                        })
-                    
-                    # Guardamos el bloque de 24 registros para ese día
-                    supabase.table("datos_energia").upsert(registros, on_conflict="fecha, hora").execute()
-                    print(f"✅ {fecha_str}: {len(registros)} horas guardadas (Media: {round(media_dia,4)}).")
+                    registros_dia.append({
+                        "fecha": fecha_str,
+                        "hora": hora_real,
+                        "precio_kwh": round(precio, 5),
+                        "tramo": tramo,
+                        "vs_media": round(vs_media, 2)
+                    })
+                
+                # Guardado masivo por día
+                if registros_dia:
+                    supabase.table("datos_energia").upsert(registros_dia, on_conflict="fecha, hora").execute()
+                    print(f"✅ {fecha_str}: {len(registros_dia)} horas guardadas. Media: {round(media_dia,4)}")
             
-            time.sleep(1) # Un poco más de calma para la API
+            time.sleep(0.5)
         except Exception as e:
-            print(f"❌ Error en {fecha_str}: {e}")
+            print(f"❌ Error crítico en {fecha_str}: {e}")
 
 if __name__ == "__main__":
     recuperar_rango_inteligente(15)
