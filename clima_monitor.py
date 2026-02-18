@@ -12,7 +12,7 @@ AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLC
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_clima_extremadura():
-    print(f"=== Monitor de Clima - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
+    print(f"=== Monitor de Clima Pro - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
     
     ciudades = {
         "Badajoz": "4452", "Caceres": "3431", "Merida": "4410",
@@ -37,35 +37,32 @@ def obtener_clima_extremadura():
                     lecturas = resp_datos.json()
                     
                     if lecturas:
-                        # Tomamos la última lectura válida
                         ultima = lecturas[-1]
+                        # EXTRAEMOS LOS NUEVOS CAMPOS CRÍTICOS
                         datos_procesados[ciudad] = {
                             "fecha": fecha_hoy,
                             "estacion": ciudad,
+                            "id_estacion": id_estacion,
                             "temp_max": ultima.get('ta'),
                             "temp_min": ultima.get('ta'),
-                            "precipitacion": ultima.get('prec', 0)
+                            "precipitacion": ultima.get('prec', 0),
+                            "humedad": ultima.get('hr'),      # Humedad Relativa %
+                            "viento_vel": ultima.get('vv')    # Velocidad viento km/h
                         }
-                        print(f"  ✓ Datos recibidos.")
+                        print(f"  ✓ Datos completos recibidos (Temp, Hum, Viento).")
             else:
-                print(f"  ✗ Estación no disponible ahora.")
-        except Exception:
-            print(f"  ✗ Error en conexión.")
+                print(f"  ✗ Estación no disponible.")
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
 
-    # --- GUARDADO FINAL (FUERA DEL BUCLE) ---
     if datos_procesados:
         registros = list(datos_procesados.values())
-        print(f"\n→ Guardando {len(registros)} estaciones en Supabase...")
+        print(f"\n→ Guardando {len(registros)} estaciones con datos enriquecidos...")
         try:
-            supabase.table("datos_clima").upsert(
-                registros, 
-                on_conflict="fecha, estacion"
-            ).execute()
-            print("✓ Proceso de clima finalizado correctamente.")
+            supabase.table("datos_clima").upsert(registros, on_conflict="fecha, estacion").execute()
+            print("✓ Base de datos de clima actualizada.")
         except Exception as e:
-            print(f"✗ Error al guardar: {e}")
-    else:
-        print("\n⚠ No se pudieron obtener datos hoy.")
+            print(f"✗ Error Supabase: {e}")
 
 if __name__ == "__main__":
     obtener_clima_extremadura()
