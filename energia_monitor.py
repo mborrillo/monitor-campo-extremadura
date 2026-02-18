@@ -8,51 +8,75 @@ SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def obtener_precios_luz():
-    print("⚡ Consultando Precios de Energía (REE)...")
+def obtener_tramo(hora, es_fin_de_semana):
+    """Determina el tramo eléctrico en España (Península)"""
+    if es_fin_de_semana:
+        return "Valle"
     
-    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    # Endpoint de ESIOS para el PVPC (Indicador 1001)
+    # Horarios laborables:
+    if 0 <= hora < 8:
+        return "Valle"
+    elif hora in [10, 11, 12, 13, 18, 19, 20, 21]:
+        return "Punta"
+    else:
+        return "Llano"
+
+def obtener_precios_luz():
+    print("⚡ Consultando Precios de Energía (REE) con Analítica...")
+    
+    ahora = datetime.now()
+    fecha_hoy = ahora.strftime("%Y-%m-%d")
+    es_fin_de_semana = ahora.weekday() >= 5 # 5=Sábado, 6=Domingo
+    
     url = f"https://api.esios.ree.es/archives/70/download_json?locale=es&date={fecha_hoy}"
     
     try:
         response = requests.get(url)
         if response.status_code != 200:
-            print(f"⚠️ No se pudo conectar con REE: {response.status_code}")
+            print(f"⚠️ Error API REE: {response.status_code}")
             return
 
         datos = response.json()
-        # Usamos un diccionario para limpiar duplicados antes de enviar a Supabase
-        registros_dict = {}
+        precios_temp = []
         
-        # Procesamos el bloque PVPC que devuelve la API
+        # Paso 1: Recolectar precios básicos
         for hora_dato in datos.get('PVPC', []):
-            # El precio viene en €/MWh, lo pasamos a €/kWh
-            precio_mwh = float(hora_dato['PCB'].replace(',', '.'))
-            precio_kwh = precio_mwh / 1000
-            
-            # Extraemos la hora (ej: de "00-01" tomamos el 0)
-            hora_str = hora_dato['Dia'].split('-')[0] if '-' in hora_dato['Dia'] else "0"
-            hora_int = int(hora_str)
-            
-            # Guardamos en el diccionario usando la hora como clave
-            registros_dict[hora_int] = {
-                "fecha": fecha_hoy,
-                "hora": hora_int,
-                "precio_kwh": round(precio_kwh, 5)
-            }
+            precio_kwh = float(hora_dato['PCB'].replace(',', '.')) / 1000
+            hora_int = int(hora_dato['Dia'].split('-')[0]) if '-' in hora_dato['Dia'] else 0
+            precios_temp.append({"hora": hora_int, "precio": precio_kwh})
 
-        # Si tenemos datos, los enviamos todos juntos
-        if registros_dict:
-            lista_final = list(registros_dict.values())
+        if not precios_temp:
+            print("⚠ No se encontraron datos de PVPC.")
+            return
+
+        # Paso 2: Calcular la media del día
+        suma_precios = sum(p['precio'] for p in precios_temp)
+        media_dia = suma_precios / len(precios_temp)
+
+        # Paso 3: Enriquecer datos para el "Semáforo"
+        registros_finales = []
+        for p in precios_temp:
+            vs_media = ((p['precio'] - media_dia) / media_dia) * 100
+            tramo = obtener_tramo(p['hora'], es_fin_de_semana)
+            
+            registros_finales.append({
+                "fecha": fecha_hoy,
+                "hora": p['hora'],
+                "precio_kwh": round(p['precio'], 5),
+                "tramo": tramo,
+                "vs_media": round(vs_media, 2)
+            })
+
+        # Paso 4: Guardar en Supabase
+        if registros_finales:
             supabase.table("datos_energia").upsert(
-                lista_final, 
+                registros_finales, 
                 on_conflict="fecha, hora"
             ).execute()
-            print(f"✅ ¡Éxito! {len(lista_final)} precios horarios guardados en Supabase.")
+            print(f"✅ ¡Éxito! 24 horas actualizadas con analítica (Media hoy: {round(media_dia, 4)} €/kWh).")
 
     except Exception as e:
-        print(f"❌ Error en el monitor de energía: {e}")
+        print(f"❌ Error en monitor de energía: {e}")
 
 if __name__ == "__main__":
     obtener_precios_luz()
