@@ -8,9 +8,9 @@ SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_mercados():
-    print("📈 Consultando Mercados Internacionales (Chicago/NY/ICE)...")
+    print(f"=== Monitor de Mercados Pro - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
     
-    # Tickers seleccionados por relevancia para Extremadura
+    # Tickers clave para el sector agropecuario de Extremadura
     activos = {
         "Trigo": {"ticker": "ZW=F", "cat": "Cereal"},
         "Maiz": {"ticker": "ZC=F", "cat": "Cereal"},
@@ -31,13 +31,21 @@ def obtener_mercados():
         try:
             print(f"→ Analizando {nombre}...")
             ticket = yf.Ticker(info['ticker'])
-            hist = ticket.history(period="2d") # Pedimos 2 días para calcular la variación
             
-            if len(hist) >= 1:
-                ultimo_cierre = hist['Close'].iloc[-1]
-                precio_ant = hist['Close'].iloc[-2] if len(hist) > 1 else ultimo_cierre
+            # Pedimos 5 días para asegurar que siempre haya al menos 2 sesiones de mercado
+            # Esto soluciona los NULL de los fines de semana
+            hist = ticket.history(period="5d")
+            
+            if not hist.empty and len(hist) >= 2:
+                ultimo_cierre = float(hist['Close'].iloc[-1])
+                precio_ant = float(hist['Close'].iloc[-2])
                 
-                # Calcular variación porcentual
+                # --- FILTRO DE ROBUSTEZ ---
+                # Si el precio es 0 o la caída es superior al 80%, es un error de ticker/vencimiento
+                if ultimo_cierre <= 0 or (precio_ant > 0 and (ultimo_cierre / precio_ant) < 0.2):
+                    print(f"  ⚠️ Anomalía de precio detectada en {nombre} (Posible error de yfinance). Omitiendo.")
+                    continue
+
                 variacion = ((ultimo_cierre - precio_ant) / precio_ant) * 100
                 
                 registros.append({
@@ -50,17 +58,24 @@ def obtener_mercados():
                 })
                 print(f"  ✓ {nombre}: {round(ultimo_cierre, 2)} ({round(variacion, 2)}%)")
             else:
-                print(f"  ⚠️ Sin datos recientes para {nombre}")
+                print(f"  ⚠️ No hay datos suficientes en los últimos 5 días para {nombre}")
 
         except Exception as e:
-            print(f"  ❌ Error en {nombre}: {e}")
+            print(f"  ❌ Error técnico con {nombre}: {e}")
 
+    # Guardado masivo en Supabase
     if registros:
-        # IMPORTANTE: Asegúrate de tener un índice único en (fecha, activo) en Supabase
-        supabase.table("mercados_internacionales").upsert(registros, on_conflict="fecha, activo").execute()
-        print(f"\n✅ ¡Éxito! {len(registros)} activos actualizados.")
+        print(f"\n→ Actualizando {len(registros)} activos en la base de datos...")
+        try:
+            supabase.table("mercados_internacionales").upsert(
+                registros, 
+                on_conflict="fecha, activo"
+            ).execute()
+            print("✅ Proceso de mercados finalizado con éxito.")
+        except Exception as e:
+            print(f"❌ Error al guardar en Supabase: {e}")
     else:
-        print("\n❌ No se pudo recuperar ningún dato de mercado.")
+        print("\n⚠ No se generaron registros válidos para guardar.")
 
 if __name__ == "__main__":
     obtener_mercados()
