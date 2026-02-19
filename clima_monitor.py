@@ -12,57 +12,55 @@ AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLC
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_clima_extremadura():
-    print(f"=== Monitor de Clima Pro - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
+    print(f"=== Monitor de Clima Inteligente - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
     
-    ciudades = {
-        "Badajoz": "4452", "Caceres": "3431", "Merida": "4410",
-        "Plasencia": "3519", "Don Benito": "4358", "Almendralejo": "4446",
-        "Zafra": "4427", "Navalmoral de la Mata": "3411", "Trujillo": "3441", "Hervas": "3469"
-    }
-    
-    datos_procesados = {}
-    headers = {'api_key': AEMET_API_KEY}
+    ciudades = {"Badajoz": "4452", "Caceres": "3431", "Merida": "4455"}
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
 
     for ciudad, id_estacion in ciudades.items():
-        print(f"→ Consultando {ciudad}...")
-        url = f"https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/{id_estacion}"
-        
-        try:
-            r = requests.get(url, headers=headers)
-            if r.status_code == 200:
-                detalles_url = r.json().get('datos')
-                if detalles_url:
-                    resp_datos = requests.get(detalles_url)
-                    lecturas = resp_datos.json()
-                    
-                    if lecturas:
-                        ultima = lecturas[-1]
-                        # EXTRAEMOS LOS NUEVOS CAMPOS CRÍTICOS
-                        datos_procesados[ciudad] = {
-                            "fecha": fecha_hoy,
-                            "estacion": ciudad,
-                            "id_estacion": id_estacion,
-                            "temp_max": ultima.get('ta'),
-                            "temp_min": ultima.get('ta'),
-                            "precipitacion": ultima.get('prec', 0),
-                            "humedad": ultima.get('hr'),      # Humedad Relativa %
-                            "viento_vel": ultima.get('vv')    # Velocidad viento km/h
-                        }
-                        print(f"  ✓ Datos completos recibidos (Temp, Hum, Viento).")
-            else:
-                print(f"  ✗ Estación no disponible.")
-        except Exception as e:
-            print(f"  ✗ Error: {e}")
+        url_aemet = f"https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/{id_estacion}"
+        params = {"api_key": AEMET_API_KEY}
 
-    if datos_procesados:
-        registros = list(datos_procesados.values())
-        print(f"\n→ Guardando {len(registros)} estaciones con datos enriquecidos...")
         try:
-            supabase.table("datos_clima").upsert(registros, on_conflict="fecha, estacion").execute()
-            print("✓ Base de datos de clima actualizada.")
+            r = requests.get(url_aemet, params=params)
+            if r.status_code == 200:
+                datos_url = r.json().get('datos')
+                resp_datos = requests.get(datos_url)
+                lecturas = resp_datos.json()
+
+                if lecturas:
+                    # FILTRAMOS LECTURAS SOLO DE HOY
+                    lecturas_hoy = [l for l in lecturas if l.get('fint', '').startswith(fecha_hoy)]
+                    
+                    if not lecturas_hoy: # Si es muy temprano, tomamos la última disponible
+                        lecturas_hoy = [lecturas[-1]]
+
+                    # PROCESAMOS ANALÍTICA DIARIA
+                    temps = [l.get('ta') for l in lecturas_hoy if l.get('ta') is not None]
+                    precips = [l.get('prec') for l in lecturas_hoy if l.get('prec') is not None]
+                    
+                    temp_max = max(temps) if temps else None
+                    temp_min = min(temps) if temps else None
+                    precip_acumulada = sum(precips) if precips else 0
+                    
+                    ultima = lecturas_hoy[-1] # Para humedad y viento tomamos la actual
+
+                    registro = {
+                        "fecha": fecha_hoy,
+                        "estacion": ciudad,
+                        "id_estacion": id_estacion,
+                        "temp_max": temp_max,
+                        "temp_min": temp_min,
+                        "temp_actual": ultima.get('ta'), # Nueva columna recomendada
+                        "precipitacion": round(precip_acumulada, 2),
+                        "humedad": ultima.get('hr'),
+                        "viento_vel": ultima.get('vv')
+                    }
+
+                    supabase.table("datos_clima").upsert(registro, on_conflict="fecha, estacion").execute()
+                    print(f"  ✓ {ciudad}: Max {temp_max}ºC / Min {temp_min}ºC / Lluvia {round(precip_acumulada, 2)}mm")
         except Exception as e:
-            print(f"✗ Error Supabase: {e}")
+            print(f"  ✗ Error en {ciudad}: {e}")
 
 if __name__ == "__main__":
     obtener_clima_extremadura()
