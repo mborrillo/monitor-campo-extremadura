@@ -38,7 +38,7 @@ def obtener_precios_locales():
             # 1. Intentamos buscar el precio anterior para calcular la tendencia
             variacion = 0
             try:
-                res = supabase.table("datos_agrotech")\
+                res = supabase.table("precios_agricolas")\
                     .select("precio_min, precio_max")\
                     .eq("producto", p["prod"])\
                     .order("fecha", desc=True)\
@@ -64,10 +64,11 @@ def obtener_precios_locales():
 
     if registros_finales:
         # El upsert evita los duplicados que vimos en tu CSV
-        supabase.table("datos_agrotech").upsert(
+        supabase.table("precios_agricolas").upsert(
             registros_finales, on_conflict="fecha, producto"
         ).execute()
         print(f"✅ Lonja actualizada. {len(registros_finales)} productos procesados.")
 
 if __name__ == "__main__":
     obtener_precios_locales()
+
