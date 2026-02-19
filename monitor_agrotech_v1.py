@@ -8,10 +8,10 @@ SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_precios_locales():
-    ahora = datetime.now()
-    fecha_hoy = ahora.strftime("%Y-%m-%d")
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
     print(f"🚜 Sincronizando Lonja de Extremadura: {fecha_hoy}")
     
+    # DICCIONARIO CORREGIDO: Todos los productos tienen ahora su clave 'var'
     sectores = {
         "Aceites": [
             {"prod": "AOVE", "var": "Multivarietal", "min": 8.75, "max": 9.25, "uni": "€/kg"},
@@ -28,6 +28,13 @@ def obtener_precios_locales():
         "Cereales": [
             {"prod": "Trigo Duro", "var": "RGT Pelayo", "min": 0.28, "max": 0.30, "uni": "€/kg"},
             {"prod": "Maíz", "var": "Standard", "min": 0.22, "max": 0.24, "uni": "€/kg"}
+        ],
+        "Industria": [
+            {"prod": "Tomate de Industria", "var": "Campaña", "min": 0.13, "max": 0.15, "uni": "€/kg"},
+            {"prod": "Pimentón de la Vera", "var": "D.O.P.", "min": 3.80, "max": 4.25, "uni": "€/kg"}
+        ],
+        "Frutas": [
+            {"prod": "Cereza del Jerte", "var": "Picota", "min": 2.50, "max": 5.00, "uni": "€/kg"}
         ]
     }
 
@@ -40,7 +47,7 @@ def obtener_precios_locales():
             variacion = 0
             
             try:
-                # Buscamos el precio más reciente PERO que sea de una fecha anterior a hoy
+                # Buscamos el último precio registrado ANTES de hoy para este producto
                 res = supabase.table("precios_agricolas")\
                     .select("precio_min, precio_max")\
                     .eq("producto", p["prod"])\
@@ -53,17 +60,17 @@ def obtener_precios_locales():
                     med_ant = (ant["precio_min"] + ant["precio_max"]) / 2
                     variacion = ((precio_med_hoy - med_ant) / med_ant) * 100
             except Exception as e:
-                print(f"  ℹ️ Sin histórico para {p['prod']}")
+                print(f"  ℹ️ Sin historial previo para {p['prod']}")
 
             registros_finales.append({
                 "fecha": fecha_hoy,
                 "sector": sector,
                 "producto": p["prod"],
-                "variedad": p["var"], # Ahora sí enviamos variedad
+                "variedad": p.get("var", "N/A"), # Evita el null si falta la clave
                 "precio_min": p["min"],
                 "precio_max": p["max"],
-                "precio_anterior_med": round(med_ant, 4) if med_ant else None, # GUARDAMOS EL DATO
-                "variacion_p": round(variacion, 2) if variacion != 0 else 0,
+                "precio_anterior_med": round(med_ant, 4) if med_ant else None,
+                "variacion_p": round(variacion, 2) if med_ant else 0,
                 "unidad": p["uni"],
                 "fuente": "Lonja de Extremadura"
             })
@@ -73,7 +80,7 @@ def obtener_precios_locales():
             supabase.table("precios_agricolas").upsert(
                 registros_finales, on_conflict="fecha, producto"
             ).execute()
-            print(f"✅ ¡Hecho! {len(registros_finales)} registros procesados con analítica completa.")
+            print(f"✅ Proceso completado: {len(registros_finales)} productos sincronizados.")
         except Exception as e:
             print(f"❌ Error Supabase: {e}")
 
