@@ -1,25 +1,19 @@
-# 🚀 Extremadura Agrotech: Motor de Inteligencia Agraria
-Ecosistema automatizado de captura, normalización y procesamiento de datos críticos para el sector agroindustrial de Extremadura.
+# 🚜 Monitor AgroTech Extremadura
+> Plataforma de Inteligencia de Datos para el sector agroindustrial.
 
-🛠️ Stack Tecnológico
-Base de Datos: Supabase (PostgreSQL) con lógica de negocio integrada en vistas SQL.
+## 🌟 Propuesta de Valor
+Este sistema automatiza la captura y análisis de datos críticos para la toma de decisiones en el campo extremeño, integrando precios de mercado, meteorología de precisión y costes energéticos.
 
-Backend / Ingesta: Python 3.9 (Requests, Supabase-py).
+## 📊 Arquitectura del Ecosistema
+1. **Ingesta (Python):** Scripts automáticos que consultan APIs oficiales (AEMET, REE, Lonjas).
+2. **Cerebro (Supabase/PostgreSQL):** Vistas SQL que procesan recomendaciones en tiempo real (Asesor de riego, salud sectorial).
+3. **Automatización (GitHub Actions):** Flujos de trabajo que mantienen el sistema vivo 24/7 sin intervención humana.
 
-Automatización: GitHub Actions (Programación horaria/CRON).
+## 🛠️ Vistas de Negocio Implementadas
+- **v_asesor_operaciones:** Recomendaciones de riego y tratamiento fitosanitario.
+- **v_comparativa_mercados:** Arbitraje dinámico entre Lonjas locales y Chicago/Euronext (USD/EUR normalizado).
+- **v_salud_sectores:** Monitorización macro de la tendencia de precios por sectores.
 
-Fuentes de Datos: AEMET (Clima), REE/PVPC (Energía), Lonjas Locales (Precios), Yahoo Finance (Mercados Globales).
-
-## 🏗️ Arquitectura de Datos
-El sistema se basa en una arquitectura de 3 capas:
-
-Capa de Ingesta (Raw Data): Scripts que limpian y suben datos crudos evitando duplicados mediante upsert y claves compuestas (fecha, estacion, fecha, producto).
-
-Capa de Normalización (Mapping): Tabla mapeo_productos que actúa como traductor entre nombres de lonja locales y estándares internacionales.
-
-Capa de Inteligencia (Business Views): Vistas SQL que transforman datos estáticos en recomendaciones activas (ej. v_asesor_operaciones).
-
-## 🔧 Componentes Críticos
-Normalización Monetaria: La vista v_comparativa_mercados realiza conversiones dinámicas de USD/Bushel a EUR/Kg usando el tipo de cambio Euro_Dolar del día.
-
-Análisis Climático: Procesamiento de series temporales de 24h para extraer temperaturas Máximas y Mínimas reales, superando las limitaciones de lecturas instantáneas.
+## 🚀 Próximos Pasos
+- Integración de Frontend en Lovable.
+- Sistema de alertas Push vía WhatsApp/Telegram.
