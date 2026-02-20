@@ -9,80 +9,83 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def obtener_precios_locales():
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    print(f"🚜 Sincronizando Lonja de Extremadura: {fecha_hoy}")
+    print(f"🚜 Sincronizando Lonja: {fecha_hoy}")
     
-    # DICCIONARIO CORREGIDO: Todos los productos tienen ahora su clave 'var'
-    sectores = {
+    # 1. OBTENEMOS EL DICCIONARIO DE MAPEO DESDE SUPABASE
+    # Esto elimina la necesidad de tener los nombres hardcodeados aquí
+    res_mapeo = supabase.table("mapeo_productos").select("*").execute()
+    mapeo = {item['producto_nombre_lonja']: item for item in res_mapeo.data}
+
+    # 2. DATOS DE LA LONJA (Simulamos la captura de hoy)
+    # En el futuro, aquí iría tu scraper o integración directa
+    sectores_hoy = {
         "Aceites": [
-            {"prod": "AOVE", "var": "Multivarietal", "min": 8.75, "max": 9.25, "uni": "€/kg"},
-            {"prod": "Aceite Virgen", "var": "Estándar", "min": 8.15, "max": 8.50, "uni": "€/kg"}
+            {"prod": "AOVE", "var": "Multivarietal", "min": 8.80, "max": 9.30, "uni": "€/kg"},
+            {"prod": "Aceite Virgen", "var": "Estándar", "min": 8.20, "max": 8.60, "uni": "€/kg"}
         ],
         "Porcino": [
-            {"prod": "Cerdos de Bellota (100% Ibérico)", "var": "Bellota", "min": 3.85, "max": 4.15, "uni": "€/kg"},
-            {"prod": "Cebo de Campo", "var": "Ibérico", "min": 2.50, "max": 2.70, "uni": "€/kg"}
-        ],
-        "Vacuno": [
-            {"prod": "Ternero Pastero (200kg)", "var": "Cruzado", "min": 3.45, "max": 3.85, "uni": "€/kg"},
-            {"prod": "Vaca de Desvieje", "var": "Industria", "min": 1.15, "max": 1.50, "uni": "€/kg"}
+            {"prod": "Cerdos de Bellota (100% Ibérico)", "var": "Bellota", "min": 3.90, "max": 4.20, "uni": "€/kg"},
+            {"prod": "Cebo de Campo", "var": "Ibérico", "min": 2.55, "max": 2.75, "uni": "€/kg"}
         ],
         "Cereales": [
-            {"prod": "Trigo Duro", "var": "RGT Pelayo", "min": 0.28, "max": 0.30, "uni": "€/kg"},
-            {"prod": "Maíz", "var": "Standard", "min": 0.22, "max": 0.24, "uni": "€/kg"}
+            {"prod": "Trigo Duro", "var": "RGT Pelayo", "min": 0.29, "max": 0.31, "uni": "€/kg"},
+            {"prod": "Maíz", "var": "Standard", "min": 0.23, "max": 0.25, "uni": "€/kg"}
         ],
-        "Industria": [
-            {"prod": "Tomate de Industria", "var": "Campaña", "min": 0.13, "max": 0.15, "uni": "€/kg"},
-            {"prod": "Pimentón de la Vera", "var": "D.O.P.", "min": 3.80, "max": 4.25, "uni": "€/kg"}
-        ],
-        "Frutas": [
-            {"prod": "Cereza del Jerte", "var": "Picota", "min": 2.50, "max": 5.00, "uni": "€/kg"}
+        "Vacuno": [
+            {"prod": "Ternero Pastero (200kg)", "var": "Cruzado", "min": 3.50, "max": 3.90, "uni": "€/kg"},
+            {"prod": "Vaca de Desvieje", "var": "Industria", "min": 1.20, "max": 1.60, "uni": "€/kg"}
         ]
     }
 
     registros_finales = []
 
-    for sector, productos in sectores.items():
+    for sector, productos in sectores_hoy.items():
         for p in productos:
             precio_med_hoy = (p["min"] + p["max"]) / 2
+            info_mapeo = mapeo.get(p["prod"], {})
+            
+            # Buscamos historial para calcular variación
             med_ant = None
             variacion = 0
-            
             try:
-                # Buscamos el último precio registrado ANTES de hoy para este producto
-                res = supabase.table("precios_agricolas")\
+                res_hist = supabase.table("precios_agricolas")\
                     .select("precio_min, precio_max")\
                     .eq("producto", p["prod"])\
                     .lt("fecha", fecha_hoy)\
                     .order("fecha", desc=True)\
                     .limit(1).execute()
                 
-                if res.data:
-                    ant = res.data[0]
+                if res_hist.data:
+                    ant = res_hist.data[0]
                     med_ant = (ant["precio_min"] + ant["precio_max"]) / 2
                     variacion = ((precio_med_hoy - med_ant) / med_ant) * 100
-            except Exception as e:
-                print(f"  ℹ️ Sin historial previo para {p['prod']}")
+            except:
+                pass
 
             registros_finales.append({
                 "fecha": fecha_hoy,
                 "sector": sector,
                 "producto": p["prod"],
-                "variedad": p.get("var", "N/A"), # Evita el null si falta la clave
+                "variedad": p["var"],
                 "precio_min": p["min"],
                 "precio_max": p["max"],
                 "precio_anterior_med": round(med_ant, 4) if med_ant else None,
-                "variacion_p": round(variacion, 2) if med_ant else 0,
+                "variacion_p": round(variacion, 2),
                 "unidad": p["uni"],
+                "lonja_id": 1, # ID de Extremadura
+                "mapping_slug": info_mapeo.get("mapping_slug"), # Aquí se hace la magia
                 "fuente": "Lonja de Extremadura"
             })
 
+    # 3. UPSERT A LA BASE DE DATOS
     if registros_finales:
         try:
             supabase.table("precios_agricolas").upsert(
                 registros_finales, on_conflict="fecha, producto"
             ).execute()
-            print(f"✅ Proceso completado: {len(registros_finales)} productos sincronizados.")
+            print(f"✅ Sincronizados {len(registros_finales)} productos con éxito.")
         except Exception as e:
-            print(f"❌ Error Supabase: {e}")
+            print(f"❌ Error al subir datos: {e}")
 
 if __name__ == "__main__":
     obtener_precios_locales()
