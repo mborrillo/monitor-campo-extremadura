@@ -1,4 +1,4 @@
-#🚀 Extremadura Agrotech: Motor de Inteligencia Agraria
+## 🚀 Extremadura Agrotech: Motor de Inteligencia Agraria
 Ecosistema automatizado de captura, normalización y procesamiento de datos críticos para el sector agroindustrial de Extremadura.
 
 🛠️ Stack Tecnológico
@@ -10,7 +10,7 @@ Automatización: GitHub Actions (Programación horaria/CRON).
 
 Fuentes de Datos: AEMET (Clima), REE/PVPC (Energía), Lonjas Locales (Precios), Yahoo Finance (Mercados Globales).
 
-## 🏗️ Arquitectura de Datos
+# 🏗️ Arquitectura de Datos
 El sistema se basa en una arquitectura de 3 capas:
 
 Capa de Ingesta (Raw Data): Scripts que limpian y suben datos crudos evitando duplicados mediante upsert y claves compuestas (fecha, estacion, fecha, producto).
@@ -19,7 +19,7 @@ Capa de Normalización (Mapping): Tabla mapeo_productos que actúa como traducto
 
 Capa de Inteligencia (Business Views): Vistas SQL que transforman datos estáticos en recomendaciones activas (ej. v_asesor_operaciones).
 
-##🔧 Componentes Críticos
+# 🔧 Componentes Críticos
 Normalización Monetaria: La vista v_comparativa_mercados realiza conversiones dinámicas de USD/Bushel a EUR/Kg usando el tipo de cambio Euro_Dolar del día.
 
 Análisis Climático: Procesamiento de series temporales de 24h para extraer temperaturas Máximas y Mínimas reales, superando las limitaciones de lecturas instantáneas.
