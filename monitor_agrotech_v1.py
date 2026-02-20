@@ -42,7 +42,9 @@ def obtener_precios_locales():
     for sector, productos in sectores_hoy.items():
         for p in productos:
             precio_med_hoy = (p["min"] + p["max"]) / 2
-            info_mapeo = mapeo.get(p["prod"], {})
+            # Código robusto para evitar errores de tildes o mayúsculas
+            nombre_buscado = p["prod"].strip().lower()
+            info_mapeo = next((v for k, v in mapeo.items() if k.strip().lower() == nombre_buscado), {})
             
             # Buscamos historial para calcular variación
             med_ant = None
@@ -89,3 +91,4 @@ def obtener_precios_locales():
 
 if __name__ == "__main__":
     obtener_precios_locales()
+
