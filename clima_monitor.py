@@ -11,8 +11,8 @@ AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLC
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def obtener_clima_extremadura():
-    print(f"=== Monitor de Clima Inteligente - {datetime.now().strftime('%d/%m/%Y %H:%M')} ===")
+def obtener_clima_inteligente():
+    print(f"🌦️ Iniciando captura de clima inteligente: {datetime.now()}")
     
     ciudades = {"Badajoz": "4452", "Caceres": "3431", "Merida": "4455"}
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
@@ -29,38 +29,40 @@ def obtener_clima_extremadura():
                 lecturas = resp_datos.json()
 
                 if lecturas:
-                    # FILTRAMOS LECTURAS SOLO DE HOY
+                    # Filtramos solo las lecturas que pertenecen al día de hoy
                     lecturas_hoy = [l for l in lecturas if l.get('fint', '').startswith(fecha_hoy)]
                     
-                    if not lecturas_hoy: # Si es muy temprano, tomamos la última disponible
+                    if not lecturas_hoy:
+                        # Si es muy temprano, usamos la última lectura disponible para tener continuidad
                         lecturas_hoy = [lecturas[-1]]
 
-                    # PROCESAMOS ANALÍTICA DIARIA
+                    # --- PROCESAMIENTO ANALÍTICO ---
                     temps = [l.get('ta') for l in lecturas_hoy if l.get('ta') is not None]
                     precips = [l.get('prec') for l in lecturas_hoy if l.get('prec') is not None]
                     
-                    temp_max = max(temps) if temps else None
-                    temp_min = min(temps) if temps else None
-                    precip_acumulada = sum(precips) if precips else 0
+                    t_max = max(temps) if temps else None
+                    t_min = min(temps) if temps else None
+                    p_acumulada = sum(precips) if precips else 0
                     
-                    ultima = lecturas_hoy[-1] # Para humedad y viento tomamos la actual
+                    ultima = lecturas_hoy[-1]
 
                     registro = {
                         "fecha": fecha_hoy,
                         "estacion": ciudad,
                         "id_estacion": id_estacion,
-                        "temp_max": temp_max,
-                        "temp_min": temp_min,
-                        "temp_actual": ultima.get('ta'), # Nueva columna recomendada
-                        "precipitacion": round(precip_acumulada, 2),
+                        "temp_max": t_max,
+                        "temp_min": t_min,
+                        "temp_actual": ultima.get('ta'),
+                        "precipitacion": round(p_acumulada, 2),
                         "humedad": ultima.get('hr'),
                         "viento_vel": ultima.get('vv')
                     }
 
                     supabase.table("datos_clima").upsert(registro, on_conflict="fecha, estacion").execute()
-                    print(f"  ✓ {ciudad}: Max {temp_max}ºC / Min {temp_min}ºC / Lluvia {round(precip_acumulada, 2)}mm")
+                    print(f"✅ {ciudad}: Max {t_max}° / Min {t_min}° / Lluvia {round(p_acumulada, 2)}mm")
+        
         except Exception as e:
-            print(f"  ✗ Error en {ciudad}: {e}")
+            print(f"❌ Error procesando {ciudad}: {e}")
 
 if __name__ == "__main__":
-    obtener_clima_extremadura()
+    obtener_clima_inteligente()
