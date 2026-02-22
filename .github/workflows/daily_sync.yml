@@ -23,11 +23,11 @@ jobs:
       - name: Ejecutar Monitores
         env:
           # ESTO ES VITAL: Pasa las credenciales a los scripts
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          # Si usas AEMET_API_KEY, añádela también aquí
+          SUPABASE_URL: "https://zzucvsremavkikecsptg.supabase.co"
+          SUPABASE_KEY: "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
+          AEMET_API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI2OGJvcnJpc21hckBnbWFpbC5jb20iLCJqdGkiOiI1YzRjYzlkZC04OTI0LTQzZjgtOTI1OC1hZWZiZjRhOWIzNGMiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3MTA4MjI3MSwidXNlcklkIjoiNWM0Y2M5ZGQtODkyNC00M2Y4LTkyNTgtYWVmYmY0YTliMzRjIiwicm9sZSI6IiJ9.EQqSYmGFYaCQvhzPv2gxYHkwa1Zyqr9sDLRCG8xLaV4"
         run: |
-          python monitor_agrotech_v2.py  # Asegúrate que el nombre coincide con tu archivo
+          python monitor_agrotech_v1.py  # Asegúrate que el nombre coincide con tu archivo
           python mercado_monitor.py
           python energia_monitor.py
           python clima_monitor.py
