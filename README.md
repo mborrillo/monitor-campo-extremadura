@@ -8,11 +8,11 @@ En el modelo agrícola tradicional, el productor suele estar desconectado de los
 El Diferencial: ¿Qué la hace única?
 A diferencia de otras apps de clima, aquí vinculamos:
 
-Clima Local Real: Datos directos de estaciones de la AEMET (Badajoz, Cáceres, Mérida).
+Clima Local Real: Datos directos de estaciones de la AEMET (Badajoz, Cáceres, Mérida, entre otras).
 
-Arbitraje de Mercados: Compara el precio de la Lonja local con los futuros internacionales de Chicago, permitiendo detectar cuándo el precio local está infravalorado.
+Arbitraje de Mercados: Compara el precio de la Lonja local con los futuros internacionales de Chicago, permitiendo detectar cuándo el precio local está infravalorado, o por encima del precio internacional.
 
-Eficiencia Energética: Cruza el precio de la luz (PVPC) con la necesidad de riego para optimizar costes.
+Eficiencia Energética: Cruza el precio de la luz (PVPC) con la actividad de riego, consiguiendo optimizar costes.
 
 ¿Para quién es?
 Productores Individuales: Optimización de riego y tratamientos.
@@ -46,7 +46,7 @@ El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurad
 ## ⚙️ Estructura del Software (Python)
 Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
 
-- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida actualizado.
+- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida, entre otras, actualizado.
 
 - mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error en el mercado internacional ensucie nuestros informes.
 
@@ -69,4 +69,4 @@ NOTA:
 El sistema se actualiza automáticamente cada mañana.
 
 ## 🏷️ Hashtags & Referencias
-#AgroTech #Extremadura #SmartFarming #BigData #Agricultura40 #OpenData #Python #Supabase #AEMET #MercadoDeFuturos #LonjaExtremadura #InnovacionRural
+#Extremadura #SmartFarming #BigData #Agricultura40 #OpenData #Python #Supabase #PostgreSQL #AEMET #MercadoDeFuturos #LonjaExtremadura #InnovacionRural
