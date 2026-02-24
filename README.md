@@ -1,4 +1,4 @@
-# 🚜 AgroTech Extremadura: Inteligencia de Mercados y Operaciones
+## 🚜 AgroTech Extremadura: Inteligencia de Mercados y Operaciones
 
 AgroTech Extremadura es una plataforma de inteligencia de datos diseñada para transformar la toma de decisiones en el sector agropecuario. No es solo un panel de control; es un puente entre la realidad productiva de las parcelas extremeñas y los movimientos de los mercados globales.
 
@@ -21,7 +21,7 @@ Gerentes de Cooperativas: Visión estratégica para la comercialización de cose
 
 Empresas de Seguros Agrarios: Monitorización de riesgos climáticos extremos.
 
-🏛️ Arquitectura de Datos (Supabase SQL)
+## 🏛️ Arquitectura de Datos (Supabase SQL)
 El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurada para ser escalable y rápida.
 
 Tablas (Donde guardamos los datos brutos)
@@ -34,7 +34,7 @@ v_salud_sectores: Agrupa los productos para decir si el sector (Cereales, Aceite
 
 v_alertas_clima_extrema: Filtra automáticamente temperaturas críticas para prevenir heladas o golpes de calor.
 
-⚙️ Estructura del Software (Python)
+## ⚙️ Estructura del Software (Python)
 Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
 
 clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida actualizado.
@@ -45,7 +45,7 @@ energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor det
 
 monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de parámetros.
 
-📚 Glosario para el Productor
+## 📚 Glosario para el Productor
 Para entender esta herramienta, usamos conceptos que ya conoces, pero con un toque tecnológico:
 
 Arbitraje: Es la diferencia de precio entre dos mercados. Si el Trigo en Chicago sube pero en Extremadura se mantiene, hay una oportunidad de negociación.
@@ -59,5 +59,5 @@ Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se
 NOTA: 
 El sistema se actualizará automáticamente cada mañana.
 
-🏷️ Hashtags & Referencias
+## 🏷️ Hashtags & Referencias
 #AgroTech #Extremadura #SmartFarming #BigData #Agricultura40 #OpenData #Python #Supabase #AEMET #MercadoDeFuturos #LonjaExtremadura #InnovacionRural
