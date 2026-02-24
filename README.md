@@ -46,27 +46,27 @@ El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurad
 ## ⚙️ Estructura del Software (Python)
 Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
 
-clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida actualizado.
+- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida actualizado.
 
-mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error en el mercado internacional ensucie nuestros informes.
+- mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error en el mercado internacional ensucie nuestros informes.
 
-energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor detrás del ahorro en los costes de riego.
+- energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor detrás del ahorro en los costes de riego.
 
-monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de parámetros.
+- monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de parámetros.
 
 ## 📚 Glosario para el Productor
 Para entender esta herramienta, usamos conceptos que ya conoces, pero con un toque tecnológico:
 
-Arbitraje: Es la diferencia de precio entre dos mercados. Si el Trigo en Chicago sube pero en Extremadura se mantiene, hay una oportunidad de negociación.
+- Arbitraje: Es la diferencia de precio entre dos mercados. Si el Trigo en Chicago sube pero en Extremadura se mantiene, hay una oportunidad de negociación.
 
-Proxy Market (Mercado de Referencia): Cuando un producto no cotiza en bolsa (como el Aceite de Oliva), usamos uno similar (Aceite de Soja) para entender hacia dónde va el viento del mercado.
+- Proxy Market (Mercado de Referencia): Cuando un producto no cotiza en bolsa (como el Aceite de Oliva), usamos uno similar (Aceite de Soja) para entender hacia dónde va el viento del mercado.
 
-ETL (Extraer, Transformar, Limpiar): Es lo que hacen nuestros scripts: recogen datos sucios de internet y te los entregan limpios y útiles.
+- ETL (Extraer, Transformar, Limpiar): Es lo que hacen nuestros scripts: recogen datos sucios de internet y te los entregan limpios y útiles.
 
-Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se prevé lluvia según la estación local.
+- Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se prevé lluvia según la estación local.
 
 NOTA: 
-El sistema se actualizará automáticamente cada mañana.
+El sistema se actualiza automáticamente cada mañana.
 
 ## 🏷️ Hashtags & Referencias
 #AgroTech #Extremadura #SmartFarming #BigData #Agricultura40 #OpenData #Python #Supabase #AEMET #MercadoDeFuturos #LonjaExtremadura #InnovacionRural
