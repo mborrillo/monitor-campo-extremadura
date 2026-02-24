@@ -14,7 +14,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def obtener_clima_inteligente():
     print(f"🌦️ Iniciando captura de clima inteligente: {datetime.now()}")
     
-    ciudades = {"BADAJOZ": "4452", "CÁCERES": "3469A", "MËRIDA": "4410X", "ALMENDRALEJO": "4436Y", "DON BENITO": "4358X", "OLIVENZA": "4486X", "ZAFRA": "4427X","HERVÁS":"3504X","PLASENCIA":"3519X","NAVALMORAL DE LA MATA":"3434X" }
+    ciudades = {"BADAJOZ": "4478X", "CÁCERES": "3469A", "MÉRIDA": "4410X", "ALMENDRALEJO": "4436Y", "DON BENITO": "4358X", "OLIVENZA": "4486X", "ZAFRA": "4427X","HERVÁS":"3504X","PLASENCIA":"3519X","NAVALMORAL DE LA MATA":"3434X" }
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
 
     for ciudad, id_estacion in ciudades.items():
@@ -56,8 +56,8 @@ def obtener_clima_inteligente():
                         "precipitacion": round(p_acumulada, 2),
                         "humedad": ultima.get('hr'),
                         "viento_vel": ultima.get('vv')
-                        ,"latitud": Lat
-                        ,"longitud": Long
+                        #"latitud": Lat,
+                        #"longitud": Long
                     }
 
                     supabase.table("datos_clima").upsert(registro, on_conflict="fecha, estacion").execute()
