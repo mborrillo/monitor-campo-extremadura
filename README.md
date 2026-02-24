@@ -25,7 +25,17 @@ Empresas de Seguros Agrarios: Monitorización de riesgos climáticos extremos.
 El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurada para ser escalable y rápida.
 
 Tablas (Donde guardamos los datos brutos)
+
+| Tabla                | Qúe es/Para que sirve                       | Utilidad / Fundamento                             |
+|----------------------|---------------------------------------------|---------------------------------------------------|
+| datos_clima          | Registro de variables meteorológicas.       | Histórico para predecir anomalías en las campañas.|
+| precios_agricolas    | Base de datos de la Lonja de Extremadura.   | Valor real al que cierran las operaciones locales.|
+| mercados_internacionales | Datos de futuros (Chicago/NY). |
+|
+|
+
 Vistas SQL (La Inteligencia del Sistema)
+
 v_asesor_operaciones: Traduce el viento y la lluvia en un semáforo de "Apto/No Apto" para pulverizar o regar.
 
 v_comparativa_mercados: Realiza el cálculo de arbitraje (diferencia de precio local vs internacional) convertido a €/kg.
