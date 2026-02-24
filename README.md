@@ -24,7 +24,7 @@ Empresas de Seguros Agrarios: Monitorización de riesgos climáticos extremos.
 ## 🏛️ Arquitectura de Datos (Supabase SQL)
 El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurada para ser escalable y rápida.
 
-Tablas (Donde guardamos los datos brutos)
+- Tablas (Donde guardamos los datos brutos)
 
 | Tabla                | Qúe es/Para que sirve                       | Utilidad / Fundamento                             |
 |----------------------|---------------------------------------------|---------------------------------------------------|
@@ -34,15 +34,14 @@ Tablas (Donde guardamos los datos brutos)
 | datos_energia | Precios de la electricidad por hora | Fundamental para el cálculo de márgenes de beneficio en regadío |
 |correlaciones_agro | El Corazón: Mapeo de productos | Vincula productos locales (ej. Cordero) con mercados de referencia (ej. Ganado Vivo |
 
-Vistas SQL (La Inteligencia del Sistema)
+- Vistas SQL (La Inteligencia del Sistema)
 
-v_asesor_operaciones: Traduce el viento y la lluvia en un semáforo de "Apto/No Apto" para pulverizar o regar.
-
-v_comparativa_mercados: Realiza el cálculo de arbitraje (diferencia de precio local vs internacional) convertido a €/kg.
-
-v_salud_sectores: Agrupa los productos para decir si el sector (Cereales, Aceites, etc.) está en expansión o contracción.
-
-v_alertas_clima_extrema: Filtra automáticamente temperaturas críticas para prevenir heladas o golpes de calor.
+| Vista                | Para que sirve |
+|----------------------|----------------|
+| v_asesor_operaciones | Traduce el viento y la lluvia en un semáforo de "Apto/No Apto" para pulverizar o regar |
+| v_comparativa_mercados | Realiza el cálculo de arbitraje (diferencia de precio local vs internacional) convertido a €/kg |
+| v_salud_sectores| Agrupa los productos para decir si el sector (Cereales, Aceites, etc.) está en expansión o contracción |
+| v_alertas_clima_extrema | Filtra automáticamente temperaturas críticas para prevenir heladas o golpes de calor |
 
 ## ⚙️ Estructura del Software (Python)
 Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
