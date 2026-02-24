@@ -1,12 +1,12 @@
-🚜 AgroTech Extremadura: Inteligencia de Mercados y Operaciones
+🚜 # AgroTech Extremadura: Inteligencia de Mercados y Operaciones
 
 AgroTech Extremadura es una plataforma de inteligencia de datos diseñada para transformar la toma de decisiones en el sector agropecuario. No es solo un panel de control; es un puente entre la realidad productiva de las parcelas extremeñas y los movimientos de los mercados globales.
 
-💡 ¿Qué es y por qué existe esta herramienta?
+💡 # ¿Qué es y por qué existe esta herramienta?
 En el modelo agrícola tradicional, el productor suele estar desconectado de los precios de Chicago o de la evolución horaria del mercado energético. AgroTech Extremadura democratiza el acceso a la información compleja, traduciéndola en acciones concretas.
 
-El Diferencial: ¿Qué nos hace únicos?
-A diferencia de otras apps de clima, nosotros vinculamos:
+El Diferencial: ¿Qué la hace única?
+A diferencia de otras apps de clima, aquí vinculamos:
 
 Clima Local Real: Datos directos de estaciones de la AEMET (Badajoz, Cáceres, Mérida).
 
