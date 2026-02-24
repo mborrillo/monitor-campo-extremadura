@@ -28,11 +28,11 @@ Tablas (Donde guardamos los datos brutos)
 
 | Tabla                | Qúe es/Para que sirve                       | Utilidad / Fundamento                             |
 |----------------------|---------------------------------------------|---------------------------------------------------|
-| datos_clima          | Registro de variables meteorológicas.       | Histórico para predecir anomalías en las campañas.|
-| precios_agricolas    | Base de datos de la Lonja de Extremadura.   | Valor real al que cierran las operaciones locales.|
-| mercados_internacionales | Datos de futuros (Chicago/NY). |
-|
-|
+| datos_clima          | Registro de variables meteorológicas       | Histórico para predecir anomalías en las campañas|
+| precios_agricolas    | Base de datos de la Lonja de Extremadura   | Valor real al que cierran las operaciones locales|
+| mercados_internacionales | Datos de futuros (Chicago/NY) | Permite ver la tendencia global antes que llegue a Extremadura|
+| datos_energia | Precios de la electricidad por hora | Fundamental para el cálculo de márgenes de beneficio en regadío |
+|correlaciones_agro | El Corazón: Mapeo de productos | Vincula productos locales (ej. Cordero) con mercados de referencia (ej. Ganado Vivo |
 
 Vistas SQL (La Inteligencia del Sistema)
 
