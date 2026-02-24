@@ -1,4 +1,4 @@
-## 🚜 AgroTech Extremadura: Inteligencia de Mercados y Operaciones
+# 🚜 AgroTech : Inteligencia de Mercados y Operaciones
 
 AgroTech Extremadura es una plataforma de inteligencia de datos diseñada para transformar la toma de decisiones en el sector agropecuario. No es solo un panel de control; es un puente entre la realidad productiva de las parcelas extremeñas y los movimientos de los mercados globales.
 
