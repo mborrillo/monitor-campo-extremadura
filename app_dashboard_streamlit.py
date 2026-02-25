@@ -4,7 +4,20 @@ import pandas as pd
 import plotly.express as px
 
 # 1. Configuración de página
-st.set_page_config(page_title="AgroTech Extremadura", layout="wide")
+#st.set_page_config(page_title="AgroTech Extremadura", layout="wide")
+st.set_page_config(
+    page_title="AgroTech Extremadura",
+    page_icon="🚜",
+    layout="wide", # Usa todo el ancho de la pantalla
+)
+
+# Un poco de CSS para que no parezca una web de los 90
+st.markdown("""
+    <style>
+    .main { background-color: #f5f7f9; }
+    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    </style>
+    """, unsafe_allow_html=True)
 
 # 2. Credenciales (Verifica que no haya espacios extra en las comillas)
 SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"
