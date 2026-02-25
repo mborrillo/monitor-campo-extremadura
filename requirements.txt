@@ -1,12 +1,6 @@
-# Núcleo de conexión
+streamlit==1.31.1
+pandas>=2.0.0
+plotly>=5.18.0
 supabase==2.3.4
 python-dotenv==1.0.0
 requests==2.31.0
-
-# Datos
-yfinance>=1.1.0
-pandas>=2.0.0
-
-# Dashboard y Gráficos
-streamlit==1.31.1
-plotly>=5.18.0
