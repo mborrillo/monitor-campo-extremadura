@@ -34,7 +34,7 @@ client = create_client(URL, KEY)
 @st.cache_data(ttl=600)
 def load_data():
     # Traemos la vista comparativa que cruza Lonja e Internacional
-    res = client.table("v_comparativa_mercados").select("*").execute()
+    res = client.table("precios_agricolas").select("*").execute()
     df = pd.DataFrame(res.data)
     return df
 
