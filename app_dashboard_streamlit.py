@@ -21,14 +21,16 @@ st.title("🚜 Monitor AgroTech Extremadura")
 # 3. Función de carga con diagnóstico
 def load_data():
     try:
-        # Intentamos traer los datos de la vista
-        res = client.table("v_comparativa_mercados").select("*").execute()
-        if not res.data:
-            st.warning("La vista SQL 'v_comparativa_mercados' está vacía.")
+        # En versiones nuevas, usamos directamente .data al final de la consulta
+        response = client.table("v_comparativa_mercados").select("*").execute()
+        
+        # Las versiones modernas devuelven los datos directamente en .data
+        if not response.data:
             return pd.DataFrame()
-        return pd.DataFrame(res.data)
+            
+        return pd.DataFrame(response.data)
     except Exception as e:
-        st.error(f"Error cargando datos: {e}")
+        st.error(f"Error al conectar con la base de datos: {e}")
         return pd.DataFrame()
 
 df = load_data()
