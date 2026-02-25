@@ -27,7 +27,7 @@ st.markdown("""
 
 # 3. CONEXIÓN (Asegúrate de tener tus keys aquí)
 URL = "https://zzucvsremavkikecsptg.supabase.co"
-KEY = "TU_KEY_ANON" # Usa la 'anon public' que encontramos antes
+KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6dWN2c3JlbWF2a2lrZWNzcHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODIzMTUsImV4cCI6MjA4NjU1ODMxNX0.3J-whUICeuP-IgrVJ4J7t7ZpawqVn8arGSboNIZHetw" # Usa la 'anon public' que encontramos antes
 client = create_client(URL, KEY)
 
 # 4. LÓGICA DE DATOS
