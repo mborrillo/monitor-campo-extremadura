@@ -18,7 +18,7 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar librerias
-        run: pip install supabase requests pandas beautifulsoup4 yfinance -r requirements_monitors.txt
+        run: pip install -r requirements_monitors.txt
 
       - name: Ejecutar Monitores
         env:
