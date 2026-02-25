@@ -59,12 +59,12 @@ try:
     
     if trigo is not None:
         with col1:
-            st.metric("TRIGO (Lonja)", f"{trigo['precio_med_lonja']} €", f"{trigo['variacion_lonja']}%")
+            st.metric("TRIGO (Lonja)", f"{trigo['precio_anterior_med']} €", f"{trigo['variacion_p']}%")
         with col2:
             st.metric("TRIGO (Chicago)", f"{trigo['precio_internacional']} $", f"{trigo['variacion_int']}%")
         with col3:
             # Cálculo de brecha (Gap)
-            gap = round(trigo['precio_med_lonja'] - (trigo['precio_internacional'] * 0.92), 3) # Conversión aprox a €
+            gap = round(trigo['precio_anterior_med'] - (trigo['precio_internacional'] * 0.92), 3) # Conversión aprox a €
             st.metric("DIFERENCIAL (Gap)", f"{gap} €", "Arbitraje")
         with col4:
             st.metric("ESTADO DEL MERCADO", "🔴 Bajista" if trigo['variacion_int'] < 0 else "🟢 Alcista")
@@ -76,7 +76,7 @@ try:
     
     fig = go.Figure()
     # Precio Local
-    fig.add_trace(go.Scatter(x=df_filtrado['fecha'], y=df_filtrado['precio_med_lonja'], name="Precio Extremadura (€)", line=dict(color='#00ff9d', width=4)))
+    fig.add_trace(go.Scatter(x=df_filtrado['fecha'], y=df_filtrado['precio_anterior_med'], name="Precio Extremadura (€)", line=dict(color='#00ff9d', width=4)))
     # Precio Internacional (Normalizado o en eje secundario)
     fig.add_trace(go.Scatter(x=df_filtrado['fecha'], y=df_filtrado['precio_internacional'], name="Precio Global ($)", line=dict(color='#ff4b4b', dash='dot')))
     
@@ -85,7 +85,7 @@ try:
 
     # --- BLOQUE 3: TABLA DETALLADA ---
     st.subheader("📋 Desglose de Operaciones")
-    st.dataframe(df_filtrado[['fecha', 'producto', 'precio_med_lonja', 'precio_internacional', 'variacion_lonja', 'sector']], use_container_width=True)
+    st.dataframe(df_filtrado[['fecha', 'producto', 'precio_anterior_med', 'precio_internacional', 'variacion_p', 'sector']], use_container_width=True)
 
 except Exception as e:
     st.error(f"Esperando datos de Supabase... {e}")
