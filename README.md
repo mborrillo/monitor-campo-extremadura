@@ -46,7 +46,7 @@ El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurad
 ## ⚙️ Estructura del Software (Python)
 Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
 
-- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de Badajoz, Cáceres y Mérida, entre otras, actualizado.
+- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de localidades como Badajoz, Cáceres, Mérida (y varias mas), actualizado.
 
 - mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error en el mercado internacional ensucie nuestros informes.
 
