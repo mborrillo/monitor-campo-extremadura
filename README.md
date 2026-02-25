@@ -12,7 +12,7 @@ Clima Local Real: Datos directos de estaciones de la AEMET (Badajoz, Cáceres, M
 
 Arbitraje de Mercados: Compara el precio de la Lonja local con los futuros internacionales de Chicago, permitiendo detectar cuándo el precio local está infravalorado, o por encima del precio internacional.
 
-Eficiencia Energética: Cruza el precio de la luz (PVPC) con la actividad de riego, consiguiendo optimizar costes.
+Eficiencia Energética: Cruza el precio de la luz (PVPC) con la actividad de riego, consiguiendo optimizar costos.
 
 ¿Para quién es?
 Productores Individuales: Optimización de riego y tratamientos.
@@ -48,11 +48,11 @@ Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma autom
 
 - clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de localidades como Badajoz, Cáceres, Mérida (y varias mas), actualizado.
 
-- mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error en el mercado internacional ensucie nuestros informes.
+- mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error de valores en el mercado internacional altere o "ensucie" los informes.
 
-- energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor detrás del ahorro en los costes de riego.
+- energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor detrás del ahorro en los costos de riego.
 
-- monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de parámetros.
+- monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de los parámetros internacionales.
 
 ## 📚 Glosario para el Productor
 Para entender esta herramienta, usamos conceptos que ya conoces, pero con un toque tecnológico:
@@ -61,9 +61,9 @@ Para entender esta herramienta, usamos conceptos que ya conoces, pero con un toq
 
 - Proxy Market (Mercado de Referencia): Cuando un producto no cotiza en bolsa (como el Aceite de Oliva), usamos uno similar (Aceite de Soja) para entender hacia dónde va el viento del mercado.
 
-- ETL (Extraer, Transformar, Limpiar): Es lo que hacen nuestros scripts: recogen datos sucios de internet y te los entregan limpios y útiles.
+- ETL (Extraer, Transformar, Limpiar): Es lo que hacen nuestros scripts: recogen datos sin procesar de la web (sucios) y los entregan limpios, listos para ser analizados.
 
-- Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se prevé lluvia según la estación local.
+- Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se prevée lluvia, según la estación local de referencia, es una información de valor agregado para el productor.
 
 NOTA: 
 El sistema se actualiza automáticamente cada mañana.
