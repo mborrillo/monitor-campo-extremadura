@@ -30,42 +30,65 @@ VERDE_CLARO = "#E8F5E9"
 # ═══════════════════════════════════════════════════════════════════
 st.markdown(f"""
     <style>
+    /* ============ IMPORTAR FUENTES ============ */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     /* ============ ESTILOS GENERALES ============ */
+    * {{
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }}
+    
     .main {{
         background-color: {BLANCO};
         padding: 2rem;
     }}
     
+    /* FORZAR TEXTO NEGRO EN TODO EL MAIN */
+    .main p,
+    .main span,
+    .main div,
+    .main label,
+    .main li {{
+        color: {NEGRO} !important;
+    }}
+    
     /* ============ SIDEBAR ============ */
     [data-testid="stSidebar"] {{
-        background-color: {VERDE_OSCURO};
+        background-color: {VERDE_OSCURO} !important;
         padding: 2rem 1rem;
     }}
     
-    [data-testid="stSidebar"] .css-1d391kg {{
-        background-color: {VERDE_OSCURO};
+    [data-testid="stSidebar"] > div:first-child {{
+        background-color: {VERDE_OSCURO} !important;
     }}
     
     /* Texto del sidebar en blanco */
-    [data-testid="stSidebar"] * {{
+    [data-testid="stSidebar"] *,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div {{
         color: {BLANCO} !important;
     }}
     
-    /* Links del sidebar */
-    [data-testid="stSidebar"] a {{
+    /* Multiselect en sidebar */
+    [data-testid="stSidebar"] [data-baseweb="select"] {{
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }}
+    
+    [data-testid="stSidebar"] [data-baseweb="select"] * {{
         color: {BLANCO} !important;
-        text-decoration: none;
     }}
     
     /* ============ TÍTULOS ============ */
-    h1 {{
+    .main h1 {{
         color: {NEGRO} !important;
         font-weight: 700 !important;
         font-size: 2.5rem !important;
         margin-bottom: 0.5rem !important;
     }}
     
-    h2 {{
+    .main h2 {{
         color: {VERDE_EXTREMADURA} !important;
         font-weight: 600 !important;
         font-size: 1.8rem !important;
@@ -73,7 +96,7 @@ st.markdown(f"""
         margin-bottom: 1rem !important;
     }}
     
-    h3 {{
+    .main h3 {{
         color: {NEGRO} !important;
         font-weight: 600 !important;
         font-size: 1.3rem !important;
@@ -92,9 +115,10 @@ st.markdown(f"""
     div[data-testid="stMetric"]:hover {{
         box-shadow: 0 4px 16px rgba(0, 151, 57, 0.15);
         border-color: {VERDE_EXTREMADURA};
+        transform: translateY(-2px);
     }}
     
-    div[data-testid="stMetricLabel"] {{
+    div[data-testid="stMetricLabel"] p {{
         color: {NEGRO} !important;
         font-size: 0.9rem !important;
         font-weight: 600 !important;
@@ -112,78 +136,74 @@ st.markdown(f"""
         font-size: 0.9rem !important;
     }}
     
-    /* ============ BADGES Y ETIQUETAS ============ */
-    .badge {{
-        display: inline-block;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin: 0.2rem;
-    }}
-    
-    .badge-success {{
-        background-color: {VERDE_EXTREMADURA};
-        color: {BLANCO};
-    }}
-    
-    .badge-positive {{
-        background-color: {VERDE_CLARO};
-        color: {VERDE_OSCURO};
-    }}
-    
-    .badge-info {{
-        background-color: {GRIS_CLARO};
-        color: {NEGRO};
-    }}
-    
-    /* ============ TARJETAS PERSONALIZADAS ============ */
-    .custom-card {{
-        background-color: {BLANCO};
-        border: 2px solid {GRIS_MEDIO};
-        border-radius: 12px;
+    /* ============ HEADER SECTION ============ */
+    .header-section {{
         padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg, {VERDE_EXTREMADURA} 0%, {VERDE_OSCURO} 100%);
+        border-radius: 12px;
+        color: {BLANCO} !important;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 151, 57, 0.2);
     }}
     
-    .custom-card:hover {{
-        box-shadow: 0 4px 16px rgba(0, 151, 57, 0.15);
-        border-color: {VERDE_EXTREMADURA};
+    .header-section * {{
+        color: {BLANCO} !important;
     }}
     
-    /* ============ TABLA ============ */
-    .dataframe {{
-        border: none !important;
+    .header-title {{
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        color: {BLANCO} !important;
+    }}
+    
+    .header-subtitle {{
+        font-size: 1.1rem;
+        margin: 0.5rem 0 0 0;
+        opacity: 0.95;
+        color: {BLANCO} !important;
+    }}
+    
+    /* ============ TABLA / DATAFRAME ============ */
+    .stDataFrame {{
         font-size: 0.95rem !important;
     }}
     
-    .dataframe thead th {{
+    .stDataFrame [data-testid="stDataFrameResizable"] {{
+        border: 2px solid {GRIS_MEDIO} !important;
+        border-radius: 8px;
+        overflow: hidden;
+    }}
+    
+    /* Encabezados de tabla */
+    .stDataFrame thead tr th {{
         background-color: {VERDE_EXTREMADURA} !important;
         color: {BLANCO} !important;
         font-weight: 600 !important;
         padding: 1rem !important;
         border: none !important;
+        text-align: left !important;
     }}
     
-    .dataframe tbody tr:nth-child(even) {{
+    /* Filas de tabla */
+    .stDataFrame tbody tr:nth-child(even) {{
         background-color: {GRIS_CLARO} !important;
     }}
     
-    .dataframe tbody tr:hover {{
+    .stDataFrame tbody tr:hover {{
         background-color: {VERDE_CLARO} !important;
     }}
     
-    .dataframe td {{
+    .stDataFrame tbody td {{
         padding: 0.8rem !important;
         border: none !important;
+        color: {NEGRO} !important;
     }}
     
-    /* ============ BOTONES Y SELECTORES ============ */
-    .stButton button {{
-        background-color: {VERDE_EXTREMADURA};
-        color: {BLANCO};
+    /* ============ BOTONES ============ */
+    .stButton > button {{
+        background-color: {VERDE_EXTREMADURA} !important;
+        color: {BLANCO} !important;
         border: none;
         border-radius: 8px;
         padding: 0.6rem 1.5rem;
@@ -191,33 +211,23 @@ st.markdown(f"""
         transition: all 0.3s ease;
     }}
     
-    .stButton button:hover {{
-        background-color: {VERDE_OSCURO};
+    .stButton > button:hover {{
+        background-color: {VERDE_OSCURO} !important;
         box-shadow: 0 4px 12px rgba(0, 151, 57, 0.3);
+        transform: translateY(-1px);
     }}
     
-    /* ============ HEADER SECTION ============ */
-    .header-section {{
-        padding: 1.5rem;
-        background: linear-gradient(135deg, {VERDE_EXTREMADURA} 0%, {VERDE_OSCURO} 100%);
-        border-radius: 12px;
-        color: {BLANCO};
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 12px rgba(0, 151, 57, 0.2);
+    .stDownloadButton > button {{
+        background-color: {VERDE_EXTREMADURA} !important;
+        color: {BLANCO} !important;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
     }}
     
-    .header-title {{
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
-        color: {BLANCO};
-    }}
-    
-    .header-subtitle {{
-        font-size: 1.1rem;
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
-        color: {BLANCO};
+    .stDownloadButton > button:hover {{
+        background-color: {VERDE_OSCURO} !important;
     }}
     
     /* ============ SEPARADOR ============ */
@@ -230,28 +240,12 @@ st.markdown(f"""
     .footer {{
         text-align: center;
         padding: 2rem;
-        color: {NEGRO};
+        color: {NEGRO} !important;
         font-size: 0.9rem;
         margin-top: 3rem;
     }}
     
-    /* ============ TEXTO GENERAL ============ */
-    p, span, div {{
-        color: {NEGRO} !important;
-    }}
-    
-    /* Textos en labels y descripciones */
-    .stMarkdown p, .stText p {{
-        color: {NEGRO} !important;
-    }}
-    
-    /* Descripción en multiselect */
-    .stMultiSelect label {{
-        color: {BLANCO} !important;
-    }}
-    
-    /* Textos de ayuda */
-    .stTooltipIcon {{
+    .footer * {{
         color: {NEGRO} !important;
     }}
     
@@ -269,12 +263,16 @@ st.markdown(f"""
             font-size: 1.5rem !important;
         }}
         
-        h1 {{
+        .main h1 {{
             font-size: 1.8rem !important;
         }}
         
-        h2 {{
+        .main h2 {{
             font-size: 1.4rem !important;
+        }}
+        
+        [data-testid="stHorizontalBlock"] {{
+            flex-direction: column;
         }}
     }}
     
@@ -285,6 +283,10 @@ st.markdown(f"""
         
         div[data-testid="stMetric"] {{
             padding: 1rem !important;
+        }}
+        
+        .main {{
+            padding: 1rem;
         }}
     }}
     </style>
