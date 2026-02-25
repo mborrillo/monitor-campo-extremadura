@@ -1,20 +1,8 @@
-# Requirements para Monitor Campo Extremadura
-# Versiones específicas para evitar conflictos
-
-# Supabase client - usar versión estable
 supabase==2.3.4
-
-# Dependencias de supabase
 httpx==0.26.0
 python-dotenv==1.0.0
-
-# Utilidades
 requests==2.31.0
-pandas==2.2.0
-
-#Libreria yFinance
 yfinance>=1.1.0
-
-# Librerías para el Dashboard Streamlit
 streamlit==1.31.1
+pandas==2.2.0
 plotly==5.18.0
