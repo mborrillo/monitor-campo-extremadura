@@ -230,9 +230,62 @@ st.markdown(f"""
     .footer {{
         text-align: center;
         padding: 2rem;
-        color: {GRIS_MEDIO};
+        color: {NEGRO};
         font-size: 0.9rem;
         margin-top: 3rem;
+    }}
+    
+    /* ============ TEXTO GENERAL ============ */
+    p, span, div {{
+        color: {NEGRO} !important;
+    }}
+    
+    /* Textos en labels y descripciones */
+    .stMarkdown p, .stText p {{
+        color: {NEGRO} !important;
+    }}
+    
+    /* Descripción en multiselect */
+    .stMultiSelect label {{
+        color: {BLANCO} !important;
+    }}
+    
+    /* Textos de ayuda */
+    .stTooltipIcon {{
+        color: {NEGRO} !important;
+    }}
+    
+    /* ============ RESPONSIVE DESIGN ============ */
+    @media (max-width: 768px) {{
+        .header-title {{
+            font-size: 1.8rem !important;
+        }}
+        
+        .header-subtitle {{
+            font-size: 0.95rem !important;
+        }}
+        
+        div[data-testid="stMetricValue"] {{
+            font-size: 1.5rem !important;
+        }}
+        
+        h1 {{
+            font-size: 1.8rem !important;
+        }}
+        
+        h2 {{
+            font-size: 1.4rem !important;
+        }}
+    }}
+    
+    @media (max-width: 480px) {{
+        .header-title {{
+            font-size: 1.4rem !important;
+        }}
+        
+        div[data-testid="stMetric"] {{
+            padding: 1rem !important;
+        }}
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -333,7 +386,7 @@ def create_trend_chart(df_data):
             mode='lines+markers',
             line={'width': 3},
             marker={'size': 8},
-            hovertemplate='<b>%{fullData.name}</b><br>Fecha: %{x|%d/%m/%Y}<br>Precio: %{y:.2f}€<extra></extra>'
+            hovertemplate='<b>%{fullData.name}</b><br>Fecha: %{x|%Y-%m-%d}<br>Precio: %{y:.2f}€<extra></extra>'
         ))
     
     fig.update_layout(
@@ -341,7 +394,11 @@ def create_trend_chart(df_data):
             'text': '📈 Evolución de Precios',
             'font': {'size': 20, 'color': NEGRO, 'family': 'Arial, sans-serif'}
         },
-        xaxis={'title': 'Fecha', 'gridcolor': GRIS_MEDIO},
+        xaxis={
+            'title': 'Fecha',
+            'gridcolor': GRIS_MEDIO,
+            'tickformat': '%Y-%m-%d'
+        },
         yaxis={'title': 'Precio (€/kg)', 'gridcolor': GRIS_MEDIO},
         plot_bgcolor=BLANCO,
         paper_bgcolor=BLANCO,
@@ -388,13 +445,18 @@ with st.sidebar:
     df_inicial = load_data()
     
     if not df_inicial.empty:
-        todos_sectores = df_inicial['sector'].unique().tolist()
+        todos_sectores = sorted(df_inicial['sector'].unique().tolist())
         sectores_sel = st.multiselect(
             "Sectores:",
             options=todos_sectores,
             default=todos_sectores,
-            help="Selecciona los sectores a visualizar"
+            help="Selecciona uno o varios sectores",
+            placeholder="Selecciona sectores"
         )
+        
+        # Si no hay nada seleccionado, mostrar todos
+        if not sectores_sel:
+            sectores_sel = todos_sectores
     else:
         sectores_sel = []
     
@@ -507,8 +569,8 @@ if not df.empty and sectores_sel:
     st.markdown("## 💰 Precios del Día")
     
     st.markdown(f"""
-        <div style="background-color: {VERDE_CLARO}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-            <p style="margin: 0; color: {VERDE_OSCURO}; font-size: 0.95rem;">
+        <div style="background-color: {VERDE_CLARO}; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid {VERDE_EXTREMADURA};">
+            <p style="margin: 0; color: {NEGRO}; font-size: 0.95rem;">
                 <strong>Última actualización:</strong> {ultima_actualizacion}
             </p>
         </div>
@@ -553,9 +615,9 @@ if not df.empty and sectores_sel:
     st.markdown("<div class='separator'></div>", unsafe_allow_html=True)
     
     # ────────────────────────────────────────────────────────────────
-    # SECCIÓN 5: DATOS DETALLADOS
+    # SECCIÓN 5: HISTÓRICO DE PRODUCTOS
     # ────────────────────────────────────────────────────────────────
-    st.markdown("## 📋 Datos Históricos Detallados")
+    st.markdown("## 📋 Histórico de Productos")
     
     # Preparar datos para mostrar
     df_display = df_filtrado[['fecha', 'sector', 'producto', 'variedad', 'precio_min', 'precio_max', 'unidad', 'variacion_p']].copy()
