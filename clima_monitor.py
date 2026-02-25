@@ -15,7 +15,8 @@ def obtener_clima_inteligente():
     print(f"🌦️ Iniciando captura de clima inteligente: {datetime.now()}")
     
     ciudades = {"BADAJOZ": "4478X", "CÁCERES": "3469A", "MÉRIDA": "4410X", "ALMENDRALEJO": "4436Y", "DON BENITO": "4358X", "OLIVENZA": "4486X", "ZAFRA": "4427X","HERVÁS":"3504X","PLASENCIA":"3519X","NAVALMORAL DE LA MATA":"3434X","LLERENA":"4386B","ALCUESCAR":"4411C","TRUJILLO":"3463Y", 
-                "JEREZ DE LOS CABALLEROS":"4511C", "FUENTE DE CANTOS":"4501X", "MONESTERIO":"4499X", "VALENCIA DE ALCÁNTARA":"3576X","HERRERA DEL DUQUE":"4244X"}
+                "JEREZ DE LOS CABALLEROS":"4511C", "FUENTE DE CANTOS":"4501X", "MONESTERIO":"4499X", "VALENCIA DE ALCÁNTARA":"3576X","HERRERA DEL DUQUE":"4244X","FREGENAL DE LA SIERRA":"4520X","PUEBLA DE OBANDO":"4468X","VILLAFRANCA DE LOS BARROS":"4395X","RETAMAL DE LLERENA":"4362X",
+                "ALISEDA":"3562X","CAÑAVERAL":"3475X","GARGANTA LA OLLA":"3436D","JARAICEJO":"3455X","PUERTO REY":"4236Y","TORRECILLA DE LOS ANGELES":"3531X"}
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
 
     for ciudad, id_estacion in ciudades.items():
