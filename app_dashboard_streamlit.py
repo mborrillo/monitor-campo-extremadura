@@ -8,7 +8,7 @@ st.set_page_config(page_title="AgroTech Extremadura", layout="wide")
 
 # 2. Credenciales (Verifica que no haya espacios extra en las comillas)
 SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"
-SUPABASE_KEY = "sb_secret_wfduZo57SIwf3rs1MI13DA_pI5NI6HG"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6dWN2c3JlbWF2a2lrZWNzcHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5ODIzMTUsImV4cCI6MjA4NjU1ODMxNX0.3J-whUICeuP-IgrVJ4J7t7ZpawqVn8arGSboNIZHetw"
 
 @st.cache_resource
 def get_client():
