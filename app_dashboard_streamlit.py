@@ -479,14 +479,15 @@ def create_price_comparison_chart(df_data):
         barmode='group',
         plot_bgcolor=BLANCO,
         paper_bgcolor=BLANCO,
-        font={'family': 'Arial, sans-serif', 'size': 12},
+        font={'family': 'Arial, sans-serif', 'size': 12, 'color': NEGRO},
         hovermode='x unified',
         legend={
             'orientation': 'h',
             'yanchor': 'bottom',
             'y': 1.02,
             'xanchor': 'right',
-            'x': 1
+            'x': 1,
+            'font': {'color': NEGRO, 'size': 12}
         },
         height=450
     )
@@ -525,14 +526,15 @@ def create_trend_chart(df_data):
         yaxis={'title': 'Precio (€/kg)', 'gridcolor': GRIS_MEDIO},
         plot_bgcolor=BLANCO,
         paper_bgcolor=BLANCO,
-        font={'family': 'Arial, sans-serif', 'size': 12},
+        font={'family': 'Arial, sans-serif', 'size': 12, 'color': NEGRO},
         hovermode='x unified',
         legend={
             'orientation': 'h',
             'yanchor': 'bottom',
             'y': 1.02,
             'xanchor': 'right',
-            'x': 1
+            'x': 1,
+            'font': {'color': NEGRO, 'size': 12}
         },
         height=400
     )
