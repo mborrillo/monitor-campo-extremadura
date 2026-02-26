@@ -25,7 +25,7 @@ ESTACIONES_EXTREMADURA = {
     "3434X": {"nombre": "NAVALMORAL DE LA MATA", "lat": 39.889, "lon": -5.541},
     "4386B": {"nombre": "LLERENA", "lat": 38.238, "lon": -6.012},
     "4411C": {"nombre": "ALCUESCAR", "lat": 39.181, "lon": -6.230},
-    "3463Y": {"nombre": "TRUJILLO", "lat": 39.462, "lon": -5.877},
+    "3463Y": {"nombre": "TRUJILLO - España", "lat": 39.462, "lon": -5.877},
     "4511C": {"nombre": "JEREZ DE LOS CABALLEROS", "lat": 38.324, "lon": -6.772},
     "4501X": {"nombre": "FUENTE DE CANTOS", "lat": 38.243, "lon": -6.311},
     "4499X": {"nombre": "MONESTERIO", "lat": 38.087, "lon": -6.273},
@@ -36,7 +36,7 @@ ESTACIONES_EXTREMADURA = {
     "4395X": {"nombre": "VILLAFRANCA DE LOS BARROS", "lat": 38.563, "lon": -6.335},
     "4362X": {"nombre": "RETAMAL DE LLERENA", "lat": 38.577, "lon": -5.836},
     "3562X": {"nombre": "ALISEDA", "lat": 39.421, "lon": -6.691},
-    "3475X": {"nombre": "CAÑAVERAL", "lat": 39.790, "lon": -6.391},
+    "3475X": {"nombre": "CAÑAVERAL-España", "lat": 39.790, "lon": -6.391},
     "3436D": {"nombre": "GARGANTA LA OLLA", "lat": 40.111, "lon": -5.773},
     "3455X": {"nombre": "JARAICEJO", "lat": 39.667, "lon": -5.811},
     "4236Y": {"nombre": "PUERTO REY", "lat": 39.423, "lon": -5.025},
@@ -73,9 +73,9 @@ def obtener_clima():
 def obtener_clima_inteligente():
     print(f"🌦️ Iniciando captura de clima inteligente: {datetime.now()}")
     
-    ciudades = {"BADAJOZ": "4478X", "CÁCERES": "3469A", "MÉRIDA": "4410X", "ALMENDRALEJO": "4436Y", "DON BENITO": "4358X", "OLIVENZA": "4486X", "ZAFRA": "4427X","HERVÁS":"3504X","PLASENCIA":"3519X","NAVALMORAL DE LA MATA":"3434X","LLERENA":"4386B","ALCUESCAR":"4411C","TRUJILLO":"3463Y", 
+    ciudades = {"BADAJOZ": "4478X", "CÁCERES": "3469A", "MÉRIDA": "4410X", "ALMENDRALEJO": "4436Y", "DON BENITO": "4358X", "OLIVENZA": "4486X", "ZAFRA": "4427X","HERVÁS":"3504X","PLASENCIA":"3519X","NAVALMORAL DE LA MATA":"3434X","LLERENA":"4386B","ALCUESCAR":"4411C","TRUJILLO - Espáña":"3463Y", 
                 "JEREZ DE LOS CABALLEROS":"4511C", "FUENTE DE CANTOS":"4501X", "MONESTERIO":"4499X", "VALENCIA DE ALCÁNTARA":"3576X","HERRERA DEL DUQUE":"4244X","FREGENAL DE LA SIERRA":"4520X","PUEBLA DE OBANDO":"4468X","VILLAFRANCA DE LOS BARROS":"4395X","RETAMAL DE LLERENA":"4362X",
-                "ALISEDA":"3562X","CAÑAVERAL":"3475X","GARGANTA LA OLLA":"3436D","JARAICEJO":"3455X","PUERTO REY":"4236Y","TORRECILLA DE LOS ANGELES":"3531X"}
+                "ALISEDA":"3562X","CAÑAVERAL-España":"3475X","GARGANTA LA OLLA":"3436D","JARAICEJO":"3455X","PUERTO REY":"4236Y","TORRECILLA DE LOS ANGELES":"3531X"}
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
 
     for ciudad, id_estacion in ciudades.items():
