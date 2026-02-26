@@ -51,7 +51,7 @@ st.markdown(f"""
     .main div,
     .main label,
     .main li {{
-        color: {NEGRO} !important;
+        color: {BLANCO} !important;
     }}
     
     /* ============ OCULTAR SIDEBAR POR DEFECTO ============ */
