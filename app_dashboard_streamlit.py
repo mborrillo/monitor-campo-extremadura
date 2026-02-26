@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="AgroTech Extremadura",
     page_icon="🟢",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"  # Sidebar colapsado
 )
 
 # ═══════════════════════════════════════════════════════════════════
@@ -40,7 +40,9 @@ st.markdown(f"""
     
     .main {{
         background-color: {BLANCO};
-        padding: 2rem;
+        padding-top: 100px !important; /* Espacio para la navbar */
+        padding-left: 2rem;
+        padding-right: 2rem;
     }}
     
     /* FORZAR TEXTO NEGRO EN TODO EL MAIN */
@@ -52,32 +54,76 @@ st.markdown(f"""
         color: {NEGRO} !important;
     }}
     
-    /* ============ SIDEBAR ============ */
+    /* ============ OCULTAR SIDEBAR POR DEFECTO ============ */
     [data-testid="stSidebar"] {{
-        background-color: {VERDE_OSCURO} !important;
-        padding: 2rem 1rem;
+        display: none;
     }}
     
-    [data-testid="stSidebar"] > div:first-child {{
-        background-color: {VERDE_OSCURO} !important;
+    /* Ocultar botón del sidebar */
+    button[kind="header"] {{
+        display: none;
     }}
     
-    /* Texto del sidebar en blanco */
-    [data-testid="stSidebar"] *,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] div {{
+    /* ============ NAVBAR SUPERIOR FIJA ============ */
+    .navbar-fixed {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, {VERDE_EXTREMADURA} 0%, {VERDE_OSCURO} 100%);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 999999;
+        box-shadow: 0 2px 12px rgba(0, 151, 57, 0.3);
+        height: 80px;
+    }}
+    
+    .navbar-logo {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }}
+    
+    .navbar-logo-circle {{
+        background-color: {BLANCO};
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }}
+    
+    .navbar-title {{
+        color: {BLANCO} !important;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.2;
+    }}
+    
+    .navbar-subtitle {{
+        color: {BLANCO} !important;
+        font-size: 0.85rem;
+        opacity: 0.9;
+        margin: 0;
+    }}
+    
+    .navbar-filter {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
         color: {BLANCO} !important;
     }}
     
-    /* Multiselect en sidebar */
-    [data-testid="stSidebar"] [data-baseweb="select"] {{
-        background-color: rgba(255, 255, 255, 0.1) !important;
-    }}
-    
-    [data-testid="stSidebar"] [data-baseweb="select"] * {{
+    .navbar-filter label {{
         color: {BLANCO} !important;
+        font-weight: 600;
+        margin: 0;
     }}
     
     /* ============ TÍTULOS ============ */
@@ -249,8 +295,68 @@ st.markdown(f"""
         color: {NEGRO} !important;
     }}
     
+    /* ============ EXPANDER (FILTRO DESPLEGABLE) ============ */
+    .stExpander {{
+        background-color: {BLANCO} !important;
+        border: 2px solid {VERDE_EXTREMADURA} !important;
+        border-radius: 8px !important;
+        margin-bottom: 1rem !important;
+    }}
+    
+    .stExpander details {{
+        background-color: {BLANCO} !important;
+    }}
+    
+    .stExpander summary {{
+        background-color: {BLANCO} !important;
+        color: {VERDE_EXTREMADURA} !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 0.8rem 1rem !important;
+    }}
+    
+    .stExpander summary:hover {{
+        background-color: {VERDE_CLARO} !important;
+    }}
+    
+    .stExpander [data-testid="stExpanderToggleIcon"] {{
+        color: {VERDE_EXTREMADURA} !important;
+    }}
+    
+    .stExpander p, .stExpander div {{
+        color: {NEGRO} !important;
+    }}
+    
+    /* Multiselect dentro del expander */
+    .stExpander [data-baseweb="select"] {{
+        border: 1px solid {GRIS_MEDIO} !important;
+    }}
+    
+    .stExpander [data-baseweb="select"] * {{
+        color: {NEGRO} !important;
+    }}
+    
     /* ============ RESPONSIVE DESIGN ============ */
     @media (max-width: 768px) {{
+        .navbar-fixed {{
+            flex-direction: column;
+            height: auto;
+            padding: 1rem;
+            gap: 1rem;
+        }}
+        
+        .navbar-title {{
+            font-size: 1.2rem;
+        }}
+        
+        .navbar-subtitle {{
+            font-size: 0.75rem;
+        }}
+        
+        .main {{
+            padding-top: 140px !important;
+        }}
+        
         .header-title {{
             font-size: 1.8rem !important;
         }}
@@ -277,6 +383,20 @@ st.markdown(f"""
     }}
     
     @media (max-width: 480px) {{
+        .main {{
+            padding-top: 160px !important;
+        }}
+        
+        .navbar-logo-circle {{
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }}
+        
+        .navbar-title {{
+            font-size: 1rem;
+        }}
+        
         .header-title {{
             font-size: 1.4rem !important;
         }}
@@ -286,7 +406,8 @@ st.markdown(f"""
         }}
         
         .main {{
-            padding: 1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
         }}
     }}
     </style>
@@ -419,62 +540,49 @@ def create_trend_chart(df_data):
     return fig
 
 # ═══════════════════════════════════════════════════════════════════
-# 6. SIDEBAR
+# 6. NAVBAR SUPERIOR FIJA
 # ═══════════════════════════════════════════════════════════════════
-with st.sidebar:
-    # Logo
-    st.markdown("""
-        <div style="text-align: center; padding: 1rem 0 2rem 0;">
-            <div style="background-color: white; border-radius: 50%; width: 80px; height: 80px; 
-                        margin: 0 auto; display: flex; align-items: center; justify-content: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                <span style="font-size: 2.5rem;">🌾</span>
+
+# Cargar datos iniciales para el filtro
+df_inicial = load_data()
+
+# HTML de la navbar
+st.markdown(f"""
+    <div class="navbar-fixed">
+        <div class="navbar-logo">
+            <div class="navbar-logo-circle">🌾</div>
+            <div>
+                <div class="navbar-title">AgroTech Extremadura</div>
+                <div class="navbar-subtitle">Inteligencia de Mercados Agrícolas</div>
             </div>
-            <h2 style="color: white !important; margin-top: 1rem;">AgroTech<br/>Extremadura</h2>
-            <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">Inteligencia Agrícola</p>
         </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
+
+# Filtro desplegable DESPUÉS de la navbar
+if not df_inicial.empty:
+    todos_sectores = sorted(df_inicial['sector'].unique().tolist())
     
-    st.markdown("<div class='separator' style='border-color: rgba(255,255,255,0.2);'></div>", unsafe_allow_html=True)
+    # Container para el filtro debajo de la navbar
+    st.markdown("<div style='margin-top: 0rem; margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
     
-    # Menú de navegación
-    st.markdown("### 📊 Panel de Control")
-    
-    # Filtros
-    st.markdown("### 🔍 Filtros")
-    
-    # Carga inicial de datos para obtener opciones
-    df_inicial = load_data()
-    
-    if not df_inicial.empty:
-        todos_sectores = sorted(df_inicial['sector'].unique().tolist())
+    with st.expander("🔍 Filtros de Sectores", expanded=False):
+        st.markdown("**Selecciona los sectores que deseas visualizar:**")
         sectores_sel = st.multiselect(
-            "Sectores:",
+            "Sectores",
             options=todos_sectores,
             default=todos_sectores,
-            help="Selecciona uno o varios sectores",
-            placeholder="Selecciona sectores"
+            help="Selecciona uno o varios sectores para filtrar los datos",
+            label_visibility="collapsed"
         )
         
         # Si no hay nada seleccionado, mostrar todos
         if not sectores_sel:
             sectores_sel = todos_sectores
-    else:
-        sectores_sel = []
-    
-    st.markdown("<div class='separator' style='border-color: rgba(255,255,255,0.2);'></div>", unsafe_allow_html=True)
-    
-    # Información adicional
-    st.markdown("""
-        <div style="background-color: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; margin-top: 2rem;">
-            <p style="font-size: 0.85rem; margin: 0; color: rgba(255,255,255,0.9);">
-                <strong>💡 Consejo:</strong><br/>
-                Los datos se actualizan cada 5 minutos automáticamente.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-top: 2rem; text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.6);'>© 2026 AgroTech Extremadura</div>", unsafe_allow_html=True)
+            st.info("ℹ️ Sin selección: mostrando todos los sectores")
+else:
+    sectores_sel = []
+    st.error("❌ No se pudieron cargar los sectores desde la base de datos")
 
 # ═══════════════════════════════════════════════════════════════════
 # 7. CONTENIDO PRINCIPAL
