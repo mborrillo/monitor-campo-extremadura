@@ -12,6 +12,13 @@ from datetime import datetime, timedelta
 import random
 import math
 
+# Supabase — importación opcional (no bloquea si no está instalado)
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+
 # ─────────────────────────────────────────────
 # CONFIGURACIÓN PÁGINA
 # ─────────────────────────────────────────────
@@ -691,40 +698,31 @@ def render_mapa(df):
         </div>
         """, unsafe_allow_html=True)
 
-        color_map = {"Óptimo": "green", "Atención": "orange", "Alerta": "red"}
+        # Mapa nativo de Streamlit — no requiere token Mapbox
+        map_df = df[["lat", "lon"]].copy()
+        map_df.columns = ["lat", "lon"]
 
-        fig = go.Figure()
+        try:
+            # Streamlit >= 1.31
+            st.map(map_df, latitude="lat", longitude="lon", zoom=12, use_container_width=True)
+        except TypeError:
+            # Fallback para versiones anteriores
+            st.map(map_df, zoom=12)
 
-        # Añadir puntos por estado
-        for estado, color in [("Óptimo", "#27a05e"), ("Atención", "#f59e0b"), ("Alerta", "#ef4444")]:
-            sub = df[df["estado"] == estado]
-            if not sub.empty:
-                fig.add_trace(go.Scattermapbox(
-                    lat=sub["lat"],
-                    lon=sub["lon"],
-                    mode="markers+text",
-                    marker=dict(size=18, color=color, opacity=0.9),
-                    text=sub["parcela"].str.replace("Parcela ", "P."),
-                    textposition="top right",
-                    textfont=dict(size=10, color="#0d2b1a"),
-                    hovertext=sub.apply(lambda r: f"<b>{r['parcela']}</b><br>Cultivo: {r['cultivo']}<br>Temp: {r['temperatura']}°C | Hum: {r['humedad']}%<br>Estado: {r['estado']}<br>Área: {r['hectareas']} ha", axis=1),
-                    hoverinfo="text",
-                    name=estado,
-                ))
-
-        fig.update_layout(
-            mapbox=dict(
-                style="open-street-map",
-                center=dict(lat=df["lat"].mean(), lon=df["lon"].mean()),
-                zoom=12,
-            ),
-            height=430,
-            margin=dict(l=0, r=0, t=0, b=0),
-            legend=dict(orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
-                        bgcolor="rgba(255,255,255,0.9)", bordercolor="#d1ead9", borderwidth=1),
-            paper_bgcolor="rgba(0,0,0,0)",
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        # Leyenda de colores debajo del mapa
+        st.markdown("""
+        <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-size:0.78rem;color:#4a7c5f;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#27a05e;margin-right:5px;"></span>Óptimo
+            </span>
+            <span style="font-size:0.78rem;color:#4a7c5f;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span>Atención
+            </span>
+            <span style="font-size:0.78rem;color:#4a7c5f;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:5px;"></span>Alerta
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col_info:
         st.markdown("""
@@ -1150,11 +1148,7 @@ def main():
         return
 
     # ── App autenticada ──
-    from supabase import create_client
-    sb = create_client(SB_URL, SB_KEY)
-    data = sb.table("sensor_readings").select("*").execute().data
-    return pd.DataFrame(data)
-    
+    df = get_sensor_data()
     page = render_sidebar()
 
     if "Dashboard" in page:
@@ -1169,4 +1163,8 @@ def main():
         render_configuracion()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"Error inesperado: {e}")
+        st.info("Recarga la página para intentarlo de nuevo.")
