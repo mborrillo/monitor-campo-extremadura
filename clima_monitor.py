@@ -106,6 +106,11 @@ def obtener_clima_inteligente():
                     p_acumulada = sum(precips) if precips else 0
                     
                     ultima = lecturas_hoy[-1]
+                    
+                    # 🔧 FIX: Obtener coordenadas del diccionario de estaciones
+                    info_estacion = ESTACIONES_EXTREMADURA.get(id_estacion, {})
+                    lat = info_estacion.get('lat')
+                    lon = info_estacion.get('lon')
 
                     registro = {
                         "fecha": fecha_hoy,
@@ -117,9 +122,8 @@ def obtener_clima_inteligente():
                         "precipitacion": round(p_acumulada, 2),
                         "humedad": ultima.get('hr'),
                         "viento_vel": ultima.get('vv'),
-                        "latitud": Lat,
-                        "longitud": Long,
-                        "estado_tratamiento": estado
+                        "latitud": lat,
+                        "longitud": lon
                     }
 
                     supabase.table("datos_clima").upsert(registro, on_conflict="fecha, estacion").execute()
