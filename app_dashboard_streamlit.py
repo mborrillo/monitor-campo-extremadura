@@ -227,18 +227,26 @@ def render_login():
             password = st.text_input("Contraseña", type="password", placeholder="••••••••")
             if st.form_submit_button("Acceder al Dashboard", use_container_width=True):
                 if email and password:
-                    try:
-                        sb = get_supabase()
-                        if sb:
-                            res = sb.auth.sign_in_with_password({"email": email, "password": password})
-                            st.session_state.update({
-                                "logged_in": True,
-                                "user_email": res.user.email,
-                                "user_name": res.user.email.split("@")[0].capitalize(),
-                            })
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Credenciales incorrectas: {e}")
+                    # Acceso directo: cualquier email+contraseña da acceso al dashboard.
+                    # Para auth real con Supabase, activa el bloque comentado más abajo.
+                    st.session_state.update({
+                        "logged_in": True,
+                        "user_email": email,
+                        "user_name": email.split("@")[0].capitalize(),
+                    })
+                    st.rerun()
+                    # ── Auth real Supabase (descomentar cuando tengas usuarios en Supabase Auth) ──
+                    # try:
+                    #     sb = get_supabase()
+                    #     res = sb.auth.sign_in_with_password({"email": email, "password": password})
+                    #     st.session_state.update({
+                    #         "logged_in": True,
+                    #         "user_email": res.user.email,
+                    #         "user_name": res.user.email.split("@")[0].capitalize(),
+                    #     })
+                    #     st.rerun()
+                    # except Exception as e:
+                    #     st.error(f"Credenciales incorrectas: {e}")
                 else:
                     st.error("Introduce email y contraseña.")
 
