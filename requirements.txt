@@ -1,9 +1,9 @@
-# --- Dashboard Core ---
+# ── Dashboard Core ──
 streamlit==1.31.1
 pandas>=2.0.0
 plotly>=5.18.0
 
-# --- Supabase Actualizado (Versión moderna para evitar el error 'proxy') ---
+# ── Supabase (versión moderna) ──
 supabase>=2.11.0
 python-dotenv==1.0.0
 requests==2.31.0
