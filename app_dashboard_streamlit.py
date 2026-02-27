@@ -370,9 +370,9 @@ def render_dashboard():
                 fig.add_trace(go.Scatter(
                     x=list(sub["semana"]) + list(sub["semana"])[::-1],
                     y=list(sub["temp_max"]) + list(sub["temp_min"])[::-1],
-                    fill="toself", fillcolor=color.replace("#", "rgba(").replace("ef","239,").replace("f5","245,") + "0.12)",
-                    line=dict(width=0), showlegend=False, hoverinfo="skip",
+                    fill="toself",
                     fillcolor=f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.12)",
+                    line=dict(width=0), showlegend=False, hoverinfo="skip",
                 ))
                 # Línea media
                 fig.add_trace(go.Scatter(
