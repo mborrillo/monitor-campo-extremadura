@@ -55,6 +55,11 @@ section[data-testid="stSidebar"] .stRadio label:hover {
     background: rgba(63,189,118,0.15) !important; border-color: var(--green-400) !important;
 }
 #MainMenu, footer, header { visibility: hidden; }
+
+/* Asegurar que el botón de colapsar/desplegar sidebar siempre sea visible */
+button[kind="header"] { display: flex !important; visibility: visible !important; opacity: 1 !important; }
+[data-testid="collapsedControl"] { display: flex !important; visibility: visible !important; color: var(--green-500) !important; background: white !important; border-radius: 0 8px 8px 0 !important; box-shadow: 2px 0 8px rgba(13,43,26,0.15) !important; }
+[data-testid="collapsedControl"]:hover { background: var(--green-100) !important; }
 .block-container { padding: 1.5rem 2rem !important; max-width: 1400px !important; }
 
 .kpi-card {
@@ -266,8 +271,8 @@ def render_sidebar():
 
         nav = st.radio("nav", [
             "🏠  Dashboard",
-            "🗺️  Mapa de Estaciones",
-            "📊  Mercados & Precios",
+            "🗺️  Mapa de Operaciones",
+            "📊  Monitor de Mercados",
             "🔔  Alertas",
             "⚙️  Configuración",
         ], label_visibility="collapsed")
@@ -292,11 +297,7 @@ def render_sidebar():
             st.session_state["logged_in"] = False
             st.rerun()
 
-        st.markdown("""
-        <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:0.68rem;color:rgba(214,245,229,0.3);">
-            AgroTech Extremadura v2.0
-        </div>
-        """, unsafe_allow_html=True)
+
 
     return nav.split("  ", 1)[-1]
 
@@ -355,12 +356,35 @@ def render_dashboard():
         if not df_clima.empty and "fecha" in df_clima.columns and "temp_actual" in df_clima.columns:
             df_plot = df_clima.copy()
             df_plot["fecha"] = pd.to_datetime(df_plot["fecha"])
-            fig = px.line(df_plot.sort_values("fecha"),
-                          x="fecha", y="temp_actual", color="estacion",
-                          color_discrete_sequence=COLORS,
-                          labels={"fecha": "", "temp_actual": "°C", "estacion": ""})
-            fig.update_traces(line=dict(width=2.5))
-            fig.update_layout(height=290, **CHART_LAYOUT)
+            # Agrupar por semana y estación para mejor legibilidad
+            df_plot["semana"] = df_plot["fecha"].dt.to_period("W").apply(lambda x: x.start_time)
+            df_avg = df_plot.groupby(["semana", "estacion"])["temp_actual"].agg(["mean", "min", "max"]).reset_index()
+            df_avg.columns = ["semana", "estacion", "temp_media", "temp_min", "temp_max"]
+            
+            estaciones = df_avg["estacion"].unique()
+            fig = go.Figure()
+            for i, est in enumerate(estaciones[:6]):
+                sub = df_avg[df_avg["estacion"] == est].sort_values("semana")
+                color = COLORS[i % len(COLORS)]
+                # Área entre min y max
+                fig.add_trace(go.Scatter(
+                    x=list(sub["semana"]) + list(sub["semana"])[::-1],
+                    y=list(sub["temp_max"]) + list(sub["temp_min"])[::-1],
+                    fill="toself", fillcolor=color.replace("#", "rgba(").replace("ef","239,").replace("f5","245,") + "0.12)",
+                    line=dict(width=0), showlegend=False, hoverinfo="skip",
+                    fillcolor=f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.12)",
+                ))
+                # Línea media
+                fig.add_trace(go.Scatter(
+                    x=sub["semana"], y=sub["temp_media"],
+                    name=est, line=dict(color=color, width=2.5),
+                    mode="lines+markers", marker=dict(size=6),
+                    hovertemplate=f"<b>{est}</b><br>Semana: %{{x|%d/%m}}<br>Media: %{{y:.1f}}°C<extra></extra>",
+                ))
+            layout_t = {**CHART_LAYOUT}
+            layout_t["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="°C")
+            layout_t["xaxis"] = dict(showgrid=False, color="#7aa98e", tickformat="%d/%m")
+            fig.update_layout(height=290, **layout_t)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Sin datos de temperatura histórica")
@@ -421,10 +445,10 @@ def render_dashboard():
         st.info("Sin datos de estaciones")
 
 # ─────────────────────────────────────────────
-# MAPA DE ESTACIONES
+# MAPA DE OPERACIONES
 # ─────────────────────────────────────────────
 def render_mapa():
-    page_hero("🗺️ Geolocalización", "Mapa de Estaciones", "Red de monitorización agrometeorológica de Extremadura")
+    page_hero("🗺️ Geolocalización", "Mapa de Operaciones", "Visualización geográfica de las estaciones")
 
     df = load("v_mapa_operaciones")
 
@@ -432,82 +456,136 @@ def render_mapa():
         st.warning("Sin datos de localización en v_mapa_operaciones")
         return
 
-    col_m, col_d = st.columns([2, 1])
+    # ── Filtros en la parte superior ──
+    f1, f2, f3 = st.columns([1, 1, 2])
+    with f1:
+        # Filtro por tratamiento
+        tratamiento_opts = ["Todos"]
+        if "recomendacion_tratamiento" in df.columns:
+            vals = df["recomendacion_tratamiento"].dropna().unique().tolist()
+            tratamiento_opts += sorted(vals)
+        filtro_trat = st.selectbox("Tratamiento", tratamiento_opts)
+    with f2:
+        # Filtro por riego
+        riego_opts = ["Todos"]
+        if "recomendacion_riego" in df.columns:
+            vals = df["recomendacion_riego"].dropna().unique().tolist()
+            riego_opts += sorted(vals)
+        filtro_riego = st.selectbox("Riego", riego_opts)
+    with f3:
+        buscar = st.text_input("🔍 Buscar estación", placeholder="Nombre de estación...")
 
-    with col_m:
-        section_header("📍", "Estaciones activas", "Coloreadas por tramo energético")
+    # Aplicar filtros
+    df_filtered = df.copy()
+    if filtro_trat != "Todos" and "recomendacion_tratamiento" in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered["recomendacion_tratamiento"] == filtro_trat]
+    if filtro_riego != "Todos" and "recomendacion_riego" in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered["recomendacion_riego"] == filtro_riego]
+    if buscar and "estacion" in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered["estacion"].str.contains(buscar, case=False, na=False)]
 
-        def color_tramo(t):
-            t = str(t or "").lower()
-            if "punta" in t: return "#ef4444"
-            if "llano" in t: return "#f59e0b"
-            return "#27a05e"
+    # ── Leyenda de estados ──
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:20px;margin:8px 0 16px;padding:10px 16px;background:white;border-radius:10px;border:1px solid var(--border);">
+        <span style="display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:600;color:#0d2b1a;">
+            <span style="width:12px;height:12px;border-radius:50%;background:#27a05e;display:inline-block;"></span> Óptimo
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:600;color:#0d2b1a;">
+            <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Precaución
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:600;color:#0d2b1a;">
+            <span style="width:12px;height:12px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Crítico
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
 
-        df["_color"] = df["tramo_energia"].apply(color_tramo) if "tramo_energia" in df.columns else "#27a05e"
+    def color_estado(row):
+        """Determinar color según estado de la estación"""
+        trat = str(row.get("recomendacion_tratamiento", "") or "").lower()
+        riego = str(row.get("recomendacion_riego", "") or "").lower()
+        tramo = str(row.get("tramo_energia", "") or "").lower()
+        if "crítico" in trat or "peligro" in trat or "punta" in tramo:
+            return "#ef4444"
+        elif "precaución" in trat or "llano" in tramo or "discrecional" in riego:
+            return "#f59e0b"
+        return "#27a05e"
 
-        try:
-            fig = go.Figure()
-            for tramo_val in (df["tramo_energia"].unique() if "tramo_energia" in df.columns else ["—"]):
-                sub = df[df["tramo_energia"] == tramo_val] if "tramo_energia" in df.columns else df
-                fig.add_trace(go.Scattermapbox(
-                    lat=sub["latitud"], lon=sub["longitud"],
-                    mode="markers+text",
-                    marker=dict(size=16, color=sub["_color"], opacity=0.9),
-                    text=sub["estacion"].astype(str).str[:10] if "estacion" in sub.columns else "",
-                    textposition="top right",
-                    textfont=dict(size=10),
-                    hovertext=sub.apply(lambda r:
-                        f"<b>{r.get('estacion','—')}</b><br>"
-                        f"🌡️ {r.get('temp_actual','—')}°C | 💧 {r.get('humedad','—')}%<br>"
-                        f"⚡ {r.get('precio_kwh','—')} €/kWh | {r.get('tramo_energia','—')}<br>"
-                        f"💧 {r.get('recomendacion_riego','—')}", axis=1),
-                    hoverinfo="text",
-                    name=str(tramo_val),
-                ))
-            fig.update_layout(
-                mapbox=dict(style="open-street-map",
-                            center=dict(lat=df["latitud"].mean(), lon=df["longitud"].mean()),
-                            zoom=7),
-                height=450, margin=dict(l=0,r=0,t=0,b=0),
-                legend=dict(orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
-                            bgcolor="rgba(255,255,255,0.9)"),
-                paper_bgcolor="rgba(0,0,0,0)",
-            )
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        except Exception:
-            # Fallback
-            st.map(df.rename(columns={"latitud": "lat", "longitud": "lon"})[["lat","lon"]], zoom=7)
+    if not df_filtered.empty:
+        df_filtered = df_filtered.copy()
+        df_filtered["_color"] = df_filtered.apply(color_estado, axis=1)
 
-    with col_d:
-        section_header("📋", "Detalle por estación", "Datos actuales")
-        for _, row in df.iterrows():
-            tramo = str(row.get("tramo_energia", "")).lower()
-            b_cls = "badge-red" if "punta" in tramo else ("badge-amber" if "llano" in tramo else "badge-green")
-            st.markdown(f"""
-            <div class="data-row">
-                <div style="flex:1;">
-                    <div style="font-weight:700;font-size:0.88rem;color:#0d2b1a;">{row.get('estacion','—')}</div>
-                    <div style="font-size:0.75rem;color:#7aa98e;margin-top:3px;">
-                        🌡️ {row.get('temp_actual','—')}°C &nbsp;
-                        💧 {row.get('humedad','—')}% &nbsp;
-                        🌬️ {row.get('viento_vel','—')} km/h
-                    </div>
-                    <div style="font-size:0.72rem;color:#7aa98e;margin-top:2px;">
-                        🌧️ {row.get('precipitacion','—')} mm &nbsp;⚡ {row.get('precio_kwh','—')} €/kWh
-                    </div>
-                </div>
-                <span class="badge {b_cls}">{row.get('tramo_energia','—')}</span>
-            </div>
-            """, unsafe_allow_html=True)
+    # ── Mapa a pantalla completa ──
+    try:
+        fig = go.Figure()
+        # Agrupar por color para la leyenda
+        color_groups = {
+            "#27a05e": "Óptimo",
+            "#f59e0b": "Precaución",
+            "#ef4444": "Crítico",
+        }
+        for hex_color, label in color_groups.items():
+            sub = df_filtered[df_filtered["_color"] == hex_color] if not df_filtered.empty else pd.DataFrame()
+            if sub.empty:
+                continue
+            fig.add_trace(go.Scattermapbox(
+                lat=sub["latitud"], lon=sub["longitud"],
+                mode="markers",
+                marker=dict(size=14, color=hex_color, opacity=0.92),
+                hovertext=sub.apply(lambda r:
+                    f"<b>{r.get('estacion','—')}</b><br>"
+                    f"🌬️ Viento: {r.get('viento_vel','—')} km/h<br>"
+                    f"🌧️ Precipitación: {r.get('precipitacion','—')} mm<br>"
+                    f"🌡️ Temp. actual: {r.get('temp_actual','—')} °C<br>"
+                    f"💧 Humedad: {r.get('humedad','—')}%<br>"
+                    f"<b>Tratamiento:</b> {r.get('recomendacion_tratamiento','—')}<br>"
+                    f"<b>Riego:</b> {r.get('recomendacion_riego','—')}<br>"
+                    f"Estado luz: {r.get('luz_estado','—')}", axis=1),
+                hoverinfo="text",
+                name=label,
+            ))
+        center_lat = df["latitud"].mean() if not df.empty else 38.9
+        center_lon = df["longitud"].mean() if not df.empty else -6.3
+        fig.update_layout(
+            mapbox=dict(style="open-street-map",
+                        center=dict(lat=center_lat, lon=center_lon),
+                        zoom=7),
+            height=540, margin=dict(l=0, r=0, t=0, b=0),
+            legend=dict(orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
+                        bgcolor="rgba(255,255,255,0.9)", font=dict(size=12)),
+            paper_bgcolor="rgba(0,0,0,0)",
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    except Exception as e:
+        st.warning(f"No se pudo cargar el mapa: {e}")
+        if not df_filtered.empty and "latitud" in df_filtered.columns:
+            st.map(df_filtered.rename(columns={"latitud": "lat", "longitud": "lon"})[["lat","lon"]], zoom=7)
+
+    # ── Tabla resumida debajo del mapa ──
+    if not df_filtered.empty:
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        section_header("📋", "Estaciones filtradas", f"{len(df_filtered)} estaciones")
+        cols_show = [c for c in ["estacion", "temp_actual", "humedad", "viento_vel", "precipitacion",
+                                  "recomendacion_tratamiento", "recomendacion_riego", "luz_estado"] if c in df_filtered.columns]
+        st.dataframe(df_filtered[cols_show].reset_index(drop=True), use_container_width=True, height=260)
 
 # ─────────────────────────────────────────────
-# MERCADOS & PRECIOS
+# MONITOR DE MERCADOS
 # ─────────────────────────────────────────────
 def render_mercados():
-    page_hero("📊 Análisis de mercado", "Mercados & Precios", "Precios agrícolas locales vs internacionales — lonja de Extremadura")
+    page_hero("📊 Análisis de mercado", "Monitor de Mercados", "Comparativa de precios locales vs internacionales")
 
     df_p = load("precios_agricolas",       order_col="fecha", limit=300)
     df_c = load("v_comparativa_mercados",  order_col="fecha", limit=100)
+
+    # ── Filtros en la parte superior ──
+    f1, f2 = st.columns([1, 2])
+    with f1:
+        sector_opts = ["Todos"]
+        if not df_p.empty and "sector" in df_p.columns:
+            sector_opts += sorted(df_p["sector"].dropna().unique().tolist())
+        filtro_sector = st.selectbox("Sector", sector_opts)
+    with f2:
+        buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
 
     # ── KPIs ──
     if not df_p.empty and "fecha" in df_p.columns:
@@ -523,94 +601,115 @@ def render_mercados():
         kpi_card(c4, "kpi-red",   "📉", str(bajadas), "A la baja", "vs día anterior")
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    # ── Gráfico comparativo Precio Local vs Internacional ──
+    section_header("📊", "Precios: Local vs Internacional (€/kg)", "Comparativa por producto")
 
-    with col1:
-        section_header("🏷️", "Precios por producto", "Última cotización disponible")
-        if not df_p.empty and "precio_max" in df_p.columns:
-            df_ult = df_p.sort_values("fecha").groupby("producto").last().reset_index()
-            df_ult = df_ult.sort_values("precio_max", ascending=True).tail(15)
-            colors_bar = ["#27a05e" if (v or 0) >= 0 else "#ef4444"
-                          for v in df_ult.get("variacion_p", [0]*len(df_ult))]
-            fig = go.Figure(go.Bar(
-                x=df_ult["precio_max"], y=df_ult["producto"],
-                orientation="h",
-                marker=dict(color=colors_bar, opacity=0.85),
-                text=[f"+{v:.1f}%" if (v or 0) > 0 else f"{v:.1f}%"
-                      for v in df_ult.get("variacion_p", [0]*len(df_ult))],
-                textposition="outside",
-                hovertemplate="<b>%{y}</b><br>%{x} €/kg<extra></extra>",
+    if not df_c.empty:
+        df_c["fecha"] = pd.to_datetime(df_c["fecha"])
+        df_ult_c = df_c.sort_values("fecha").groupby("producto").last().reset_index()
+
+        # Aplicar filtros
+        if buscar_prod:
+            df_ult_c = df_ult_c[df_ult_c["producto"].str.contains(buscar_prod, case=False, na=False)]
+
+        if not df_ult_c.empty:
+            fig_bar = go.Figure()
+            fig_bar.add_trace(go.Bar(
+                name="Precio Local",
+                x=df_ult_c["producto"],
+                y=df_ult_c["precio_local_kg"],
+                marker_color="#27a05e",
+                opacity=0.9,
+                hovertemplate="<b>%{x}</b><br>Local: %{y:.2f} €/kg<extra></extra>",
             ))
-            layout = {**CHART_LAYOUT}
-            layout["xaxis"] = dict(showgrid=True, gridcolor="#e8f5ee", color="#7aa98e", title="€/kg")
-            layout["yaxis"] = dict(showgrid=False, color="#0d2b1a")
-            fig.update_layout(height=380, **layout)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("Sin datos de precios")
+            fig_bar.add_trace(go.Bar(
+                name="Precio Internacional",
+                x=df_ult_c["producto"],
+                y=df_ult_c["precio_internacional_kg"],
+                marker_color="#2d2d2d",
+                opacity=0.85,
+                hovertemplate="<b>%{x}</b><br>Internacional: %{y:.2f} €/kg<extra></extra>",
+            ))
+            layout_bar = {**CHART_LAYOUT}
+            layout_bar["barmode"] = "group"
+            layout_bar["xaxis"] = dict(showgrid=False, color="#7aa98e")
+            layout_bar["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e")
+            layout_bar["legend"] = dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5)
+            fig_bar.update_layout(height=320, **layout_bar)
+            st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
-    with col2:
-        section_header("🌍", "Comparativa local vs internacional", "Diferencial de arbitraje")
-        if not df_c.empty:
-            df_c["fecha"] = pd.to_datetime(df_c["fecha"])
-            df_ult_c = df_c.sort_values("fecha").groupby("producto").last().reset_index()
-            for _, row in df_ult_c.iterrows():
-                dif   = float(row.get("diferencial_arbitraje", 0) or 0)
-                local = float(row.get("precio_local_kg", 0) or 0)
-                intl  = float(row.get("precio_internacional_kg", 0) or 0)
-                sign  = "+" if dif > 0 else ""
-                b_cls = "badge-green" if dif > 0 else "badge-red"
-                st.markdown(f"""
-                <div class="data-row">
-                    <div style="flex:1;">
-                        <div style="font-weight:700;font-size:0.88rem;color:#0d2b1a;">{row.get('producto','—')}</div>
-                        <div style="font-size:0.75rem;color:#7aa98e;">{row.get('relacion','—')}</div>
-                        <div style="font-size:0.75rem;color:#4a7c5f;margin-top:4px;">
-                            🏠 <b class="mono">{local:.2f}</b> &nbsp;|&nbsp; 🌍 <b class="mono">{intl:.2f}</b> €/kg
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="badge {b_cls}">{sign}{dif:.2f} €</span>
-                        <div style="font-size:0.68rem;color:#7aa98e;margin-top:3px;">diferencial</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # Evolución diferencial
-            if len(df_c) > 5:
-                st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-                section_header("📉", "Evolución diferencial", "Histórico")
-                fig2 = go.Figure()
-                for prod, color in zip(df_c["producto"].unique()[:4], COLORS):
-                    sub = df_c[df_c["producto"] == prod].sort_values("fecha")
-                    fig2.add_trace(go.Scatter(
-                        x=sub["fecha"], y=sub["diferencial_arbitraje"],
-                        name=prod, line=dict(color=color, width=2),
-                        mode="lines+markers", marker=dict(size=5),
-                    ))
-                fig2.update_layout(height=220, **CHART_LAYOUT)
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("Sin datos de comparativa")
-
-    # ── Tabla completa ──
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    section_header("📋", "Tabla de precios completa", "Filtrable por sector y período")
-    if not df_p.empty:
-        cf1, cf2, _ = st.columns([1, 1, 2])
-        with cf1:
-            sectores  = ["Todos"] + sorted(df_p["sector"].dropna().unique().tolist())
-            sector_sel = st.selectbox("Sector", sectores)
-        with cf2:
-            n_dias = st.selectbox("Período (días)", [7, 14, 30, 60, 90], index=1)
 
-        cutoff  = df_p["fecha"].max() - pd.Timedelta(days=n_dias)
-        df_tab  = df_p[df_p["fecha"] >= cutoff]
-        if sector_sel != "Todos":
-            df_tab = df_tab[df_tab["sector"] == sector_sel]
-        cols_show = [c for c in ["fecha","sector","producto","variedad","precio_min","precio_max","unidad","variacion_p","fuente"] if c in df_tab.columns]
+    # ── Tabla "Precios del Día" ──
+    section_header("🗓️", "Precios del Día", f"Última actualización: {ultimo.strftime('%Y-%m-%d') if not df_p.empty and 'fecha' in df_p.columns else '—'}")
+
+    if not df_c.empty:
+        df_c_tab = df_c.sort_values("fecha").groupby("producto").last().reset_index()
+
+        # Aplicar filtros
+        if buscar_prod:
+            df_c_tab = df_c_tab[df_c_tab["producto"].str.contains(buscar_prod, case=False, na=False)]
+        if filtro_sector != "Todos" and "sector" in df_c_tab.columns:
+            df_c_tab = df_c_tab[df_c_tab["sector"] == filtro_sector]
+
+        # Cabecera tabla
+        st.markdown("""
+        <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
+                    padding:10px 20px;background:#f0faf4;border-radius:10px 10px 0 0;
+                    border:1px solid var(--border);border-bottom:2px solid var(--border);margin-bottom:2px;">
+            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Producto</span>
+            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Local (€/kg)</span>
+            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Internacional (€/kg)</span>
+            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Diferencial</span>
+            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Tendencia</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        for _, row in df_c_tab.iterrows():
+            dif   = float(row.get("diferencial_arbitraje", 0) or 0)
+            local = float(row.get("precio_local_kg", 0) or 0)
+            intl  = float(row.get("precio_internacional_kg", 0) or 0)
+            sign  = "+" if dif > 0 else ""
+            b_bg  = "#dcfce7" if dif > 0 else "#fee2e2"
+            b_col = "#15803d" if dif > 0 else "#b91c1c"
+            # Tendencia: flecha verde sube, roja baja
+            if dif > 0:
+                tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
+            elif dif < 0:
+                tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,3 8,9 13,6 20,13" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,13 20,13 20,8" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
+            else:
+                tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,8 20,8" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
+
+            st.markdown(f"""
+            <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
+                        align-items:center;padding:14px 20px;background:white;
+                        border:1px solid var(--border);border-top:none;margin-bottom:0;
+                        transition:background 0.15s;">
+                <span style="font-weight:600;font-size:0.9rem;color:#0d2b1a;">{row.get('producto','—')}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#1a5c38;">{local:.2f} €/kg</span>
+                <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#475569;">{intl:.2f} €/kg</span>
+                <span style="display:inline-flex;align-items:center;">
+                    <span style="background:{b_bg};color:{b_col};font-weight:700;font-size:0.82rem;
+                                 padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;">
+                        {sign}{dif:.2f} €/kg
+                    </span>
+                </span>
+                <span>{tend_svg}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    elif not df_p.empty:
+        # Fallback: mostrar tabla de precios locales
+        df_tab = df_p.copy()
+        if buscar_prod:
+            df_tab = df_tab[df_tab["producto"].str.contains(buscar_prod, case=False, na=False)]
+        if filtro_sector != "Todos" and "sector" in df_tab.columns:
+            df_tab = df_tab[df_tab["sector"] == filtro_sector]
+        cols_show = [c for c in ["fecha","sector","producto","precio_min","precio_max","unidad","variacion_p"] if c in df_tab.columns]
         st.dataframe(df_tab[cols_show].sort_values("fecha", ascending=False).reset_index(drop=True),
                      use_container_width=True, height=300)
+    else:
+        st.info("Sin datos de mercados disponibles")
 
 # ─────────────────────────────────────────────
 # ALERTAS
@@ -839,7 +938,7 @@ def main():
     try:
         if   "Dashboard"   in page: render_dashboard()
         elif "Mapa"        in page: render_mapa()
-        elif "Mercados"    in page: render_mercados()
+        elif "Monitor"     in page: render_mercados()
         elif "Alertas"     in page: render_alertas()
         elif "Configuraci" in page: render_configuracion()
     except Exception as e:
