@@ -291,14 +291,25 @@ def render_sidebar():
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:20px;">
         """, unsafe_allow_html=True)
 
-        nav = st.radio("nav", [
+        nav_options = [
             "🏠  Dashboard",
             "🗺️  Mapa de Operaciones",
             "📊  Monitor de Mercados",
             "🌐  Monitor de Productos",
             "🔔  Alertas",
             "⚙️  Configuración",
-        ], label_visibility="collapsed")
+        ]
+
+        # Si hay nav_target pendiente, pre-seleccionarlo y limpiarlo
+        default_idx = 0
+        if "nav_target" in st.session_state:
+            target = st.session_state.pop("nav_target")
+            for i, opt in enumerate(nav_options):
+                if target in opt:
+                    default_idx = i
+                    break
+
+        nav = st.radio("nav", nav_options, index=default_idx, label_visibility="collapsed")
 
         st.markdown("<hr style='border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0;'>", unsafe_allow_html=True)
 
@@ -312,15 +323,13 @@ def render_sidebar():
         """, unsafe_allow_html=True)
         st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        if st.button("🔄 Recargar datos", use_container_width=True):
+        if st.button("🔄 Restablecer Datos", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
         if st.button("Cerrar sesión", use_container_width=True):
             st.session_state["logged_in"] = False
             st.rerun()
-
-
 
     return nav.split("  ", 1)[-1]
 
@@ -332,7 +341,6 @@ def render_dashboard():
 
     df_mapa  = load("v_mapa_operaciones")
     df_salud = load("v_salud_sectores")
-    df_clima = load("datos_clima", order_col="fecha", limit=100)
 
     # ── KPIs ──
     c1, c2, c3, c4, c5 = st.columns(5)
@@ -374,79 +382,47 @@ def render_dashboard():
 
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
-    # ── Temperatura histórica + Salud sectores ──
-    col_g, col_s = st.columns([2, 1])
-
-    with col_g:
-        section_header("📈", "Temperatura por estación", "datos_clima — últimos 30 días")
-        if not df_clima.empty and "fecha" in df_clima.columns and "temp_actual" in df_clima.columns:
-            df_plot = df_clima.copy()
-            df_plot["fecha"] = pd.to_datetime(df_plot["fecha"])
-            # Agrupar por semana y estación para mejor legibilidad
-            df_plot["semana"] = df_plot["fecha"].dt.to_period("W").apply(lambda x: x.start_time)
-            df_avg = df_plot.groupby(["semana", "estacion"])["temp_actual"].agg(["mean", "min", "max"]).reset_index()
-            df_avg.columns = ["semana", "estacion", "temp_media", "temp_min", "temp_max"]
-            
-            estaciones = df_avg["estacion"].unique()
-            fig = go.Figure()
-            for i, est in enumerate(estaciones[:6]):
-                sub = df_avg[df_avg["estacion"] == est].sort_values("semana")
-                color = COLORS[i % len(COLORS)]
-                # Área entre min y max
-                fig.add_trace(go.Scatter(
-                    x=list(sub["semana"]) + list(sub["semana"])[::-1],
-                    y=list(sub["temp_max"]) + list(sub["temp_min"])[::-1],
-                    fill="toself",
-                    fillcolor=f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.12)",
-                    line=dict(width=0), showlegend=False, hoverinfo="skip",
-                ))
-                # Línea media
-                fig.add_trace(go.Scatter(
-                    x=sub["semana"], y=sub["temp_media"],
-                    name=est, line=dict(color=color, width=2.5),
-                    mode="lines+markers", marker=dict(size=6),
-                    hovertemplate=f"<b>{est}</b><br>Semana: %{{x|%d/%m}}<br>Media: %{{y:.1f}}°C<extra></extra>",
-                ))
-            layout_t = {**CHART_LAYOUT}
-            layout_t["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="°C")
-            layout_t["xaxis"] = dict(showgrid=False, color="#7aa98e", tickformat="%d/%m")
-            fig.update_layout(height=290, **layout_t)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("Sin datos de temperatura histórica")
-
-    with col_s:
-        section_header("🏷️", "Salud de Sectores", "Estado actual del mercado")
-        if not df_salud.empty:
-            for _, row in df_salud.iterrows():
-                estado = str(row.get("estado_mercado", "")).lower()
-                if any(x in estado for x in ["alza", "bueno", "sube"]):
-                    b_cls, dot = "badge-green", "🟢"
-                elif any(x in estado for x in ["baja", "baj", "mal"]):
-                    b_cls, dot = "badge-red", "🔴"
-                else:
-                    b_cls, dot = "badge-amber", "🟡"
-                var  = float(row.get("variacion_media_sector", 0) or 0)
-                sign = "+" if var > 0 else ""
+    # ── Salud de Sectores — horizontal, ancho completo ──
+    section_header("🏷️", "Salud de Sectores", "Estado actual del mercado agrícola")
+    if not df_salud.empty:
+        num_cols = min(len(df_salud), 5)
+        sector_cols = st.columns(num_cols)
+        for i, (_, row) in enumerate(df_salud.iterrows()):
+            estado = str(row.get("estado_mercado", "")).lower()
+            if any(x in estado for x in ["alza", "bueno", "sube"]):
+                b_cls, dot, border_color, bg_color = "badge-green", "🟢", "#27a05e", "#f0fdf4"
+            elif any(x in estado for x in ["baja", "baj", "mal"]):
+                b_cls, dot, border_color, bg_color = "badge-red", "🔴", "#ef4444", "#fff5f5"
+            else:
+                b_cls, dot, border_color, bg_color = "badge-amber", "🟡", "#f59e0b", "#fffbeb"
+            var  = float(row.get("variacion_media_sector", 0) or 0)
+            sign = "+" if var > 0 else ""
+            with sector_cols[i % num_cols]:
                 st.markdown(f"""
-                <div class="data-row" style="padding:12px 16px;">
-                    <span style="font-size:1.1rem;">{dot}</span>
-                    <div style="flex:1;">
-                        <div style="font-weight:700;font-size:0.88rem;color:#0d2b1a;">{row.get('sector','—')}</div>
-                        <div style="font-size:0.75rem;color:#7aa98e;">
-                            {row.get('num_productos','—')} productos ·
-                            ↑{row.get('productos_al_alza',0)} ↓{row.get('productos_a_la_baja',0)}
-                        </div>
+                <div style="background:{bg_color};border-radius:14px;padding:16px 18px;
+                            border:1px solid {border_color}33;box-shadow:var(--shadow);
+                            text-align:center;height:100%;">
+                    <div style="font-size:1.6rem;margin-bottom:6px;">{dot}</div>
+                    <div style="font-weight:700;font-size:0.9rem;color:#0d2b1a;margin-bottom:6px;">
+                        {row.get('sector','—')}
                     </div>
-                    <span class="badge {b_cls}">{sign}{var:.1f}%</span>
+                    <div style="margin-bottom:8px;">
+                        <span class="badge {b_cls}" style="font-size:0.9rem;padding:4px 14px;">
+                            {sign}{var:.1f}%
+                        </span>
+                    </div>
+                    <div style="font-size:0.72rem;color:#7aa98e;line-height:1.6;">
+                        {row.get('num_productos','—')} productos<br>
+                        ↑ {row.get('productos_al_alza',0)} &nbsp;·&nbsp; ↓ {row.get('productos_a_la_baja',0)}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-        else:
-            st.info("Sin datos de sectores")
+    else:
+        st.info("Sin datos de sectores")
 
-    # ── Recomendaciones ──
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-    section_header("💡", "Recomendaciones operativas", "v_mapa_operaciones — estaciones activas")
+    # ── Recomendaciones operativas ──
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+    section_header("💡", "Recomendaciones operativas", "Estaciones activas — últimas lecturas")
     if not df_mapa.empty:
         cols = st.columns(min(len(df_mapa), 3))
         for i, (_, row) in enumerate(df_mapa.head(3).iterrows()):
@@ -467,6 +443,14 @@ def render_dashboard():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+        # ── Link "Ver +" → Mapa de Operaciones ──
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        _, link_col, _ = st.columns([2, 1, 2])
+        with link_col:
+            if st.button("🗺️  Ver más en Mapa de Operaciones →", use_container_width=True, key="link_mapa"):
+                st.session_state["nav_target"] = "Mapa de Operaciones"
+                st.rerun()
     else:
         st.info("Sin datos de estaciones")
 
@@ -722,20 +706,13 @@ def render_mercados():
     section_header("🗓️", "Precios del Día", f"Última actualización: {fecha_str_header}")
 
     if not df_vis.empty:
-        # Botón exportar
+        # Tabla con popup nativo de Streamlit (permite buscar, ordenar, exportar como en Mapa de Operaciones)
         cols_export = [c for c in ["producto", "precio_local_kg", "precio_internacional_kg",
                                     "diferencial_arbitraje", "sector", "relacion", "fecha"] if c in df_vis.columns]
-        csv_data = df_vis[cols_export].to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇️ Exportar tabla CSV",
-            data=csv_data,
-            file_name=f"monitor_mercados_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            key="export_mercados",
-        )
+        st.dataframe(df_vis[cols_export].reset_index(drop=True), use_container_width=True, height=300)
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-        # Cabecera tabla
+        # Cabecera tabla visual
         st.markdown("""
         <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
                     padding:10px 20px;background:#f0faf4;border-radius:10px 10px 0 0;
@@ -787,8 +764,6 @@ def render_mercados():
         if filtro_sector != "Todos" and "sector" in df_tab.columns:
             df_tab = df_tab[df_tab["sector"] == filtro_sector]
         cols_show = [c for c in ["fecha","sector","producto","precio_min","precio_max","unidad","variacion_p"] if c in df_tab.columns]
-        st.download_button("⬇️ Exportar CSV", df_tab[cols_show].to_csv(index=False).encode("utf-8"),
-                           f"mercados_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv", key="export_merc_fb")
         st.dataframe(df_tab[cols_show].sort_values("fecha", ascending=False).reset_index(drop=True),
                      use_container_width=True, height=300)
     else:
@@ -924,18 +899,12 @@ def render_monitor_productos():
         cols_tabla = [c for c in ["fecha", "producto", "precio_cierre", "moneda", "var_precio", "categoria", "tendencia"]
                       if c in df_f.columns]
 
-        # Botón exportar
-        csv_data = df_f[cols_tabla].sort_values("fecha", ascending=False).to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇️ Exportar tabla CSV",
-            data=csv_data,
-            file_name=f"monitor_productos_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            key="export_productos",
-        )
+        # Tabla con popup nativo (mismas funcionalidades que Mapa de Operaciones)
+        st.dataframe(df_f[cols_tabla].sort_values("fecha", ascending=False).reset_index(drop=True),
+                     use_container_width=True, height=300)
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-        # Cabecera de tabla personalizada
+        # Cabecera de tabla visual personalizada
         col_widths = "1.2fr " + " ".join(["1.4fr"] * (len(cols_tabla) - 1))
         col_labels = {
             "fecha": "Fecha", "producto": "Producto", "precio_cierre": "Precio Cierre",
