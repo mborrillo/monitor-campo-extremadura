@@ -45,7 +45,14 @@ section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, var(--green-900) 0%, var(--green-800) 60%, #0a2010 100%) !important;
     border-right: none !important; box-shadow: 4px 0 30px rgba(0,0,0,0.3) !important;
 }
-section[data-testid="stSidebar"] * { color: #d6f5e5 !important; }
+/* Aplicar color claro SOLO a elementos dentro del sidebar */
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div,
+section[data-testid="stSidebar"] a,
+section[data-testid="stSidebar"] li,
+section[data-testid="stSidebar"] .stRadio,
+section[data-testid="stSidebar"] .stMarkdown { color: #d6f5e5 !important; }
 section[data-testid="stSidebar"] .stRadio label {
     background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: var(--radius-sm) !important; padding: 10px 16px !important;
@@ -133,6 +140,16 @@ button[kind="header"] { display: flex !important; visibility: visible !important
 .stButton button:hover { transform:translateY(-1px) !important; box-shadow:0 6px 20px rgba(39,160,94,0.45) !important; }
 
 .login-wrap { max-width:440px; margin:60px auto; background:white; border-radius:24px; padding:48px 40px; box-shadow:var(--shadow-lg); border:1px solid var(--border); text-align:center; }
+
+/* Labels de filtros visibles en el área principal */
+.block-container label, .block-container .stSelectbox label, .block-container .stTextInput label {
+    color: #0d2b1a !important; font-weight: 600 !important; font-size: 0.82rem !important;
+}
+/* Sobreescribir el color oscuro heredado del sidebar para los widgets del main */
+.main label { color: #0d2b1a !important; }
+.main .stSelectbox > label { color: #0d2b1a !important; }
+.main .stTextInput > label { color: #0d2b1a !important; }
+[data-testid="stForm"] label { color: #0d2b1a !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -326,7 +343,10 @@ def render_dashboard():
     df_ac    = load("v_alertas_clima_extrema", order_col="fecha")
     n_alerta = 0
     if not df_ac.empty and "alerta_riesgo" in df_ac.columns:
-        n_alerta = int(df_ac["alerta_riesgo"].notna().sum())
+        # Solo contar alertas reales, excluyendo valores vacíos/normales
+        n_alerta = int(df_ac["alerta_riesgo"].dropna().apply(
+            lambda x: str(x).strip().lower() not in ["", "none", "nan", "sin alerta", "normal", "sin alarma"]
+        ).sum())
 
     kpi_card(c1, "kpi-green", "🌡️",
              f"{temp:.1f}°C" if temp is not None else "—",
@@ -527,31 +547,42 @@ def render_mapa():
             sub = df_filtered[df_filtered["_color"] == hex_color] if not df_filtered.empty else pd.DataFrame()
             if sub.empty:
                 continue
+            hover_texts = sub.apply(lambda r:
+                f"<b>{r.get('estacion','—')}</b><br>"
+                f"🌬️ Viento: {r.get('viento_vel','—')} km/h<br>"
+                f"🌧️ Precipitación: {r.get('precipitacion','—')} mm<br>"
+                f"🌡️ Temp. actual: {r.get('temp_actual','—')} °C<br>"
+                f"💧 Humedad: {r.get('humedad','—')}%<br>"
+                f"<b>Tratamiento:</b> {r.get('recomendacion_tratamiento','—')}<br>"
+                f"<b>Riego:</b> {r.get('recomendacion_riego','—')}<br>"
+                f"Estado luz: {r.get('luz_estado','—')}", axis=1).tolist()
             fig.add_trace(go.Scattermapbox(
-                lat=sub["latitud"], lon=sub["longitud"],
+                lat=sub["latitud"].tolist(),
+                lon=sub["longitud"].tolist(),
                 mode="markers",
-                marker=dict(size=14, color=hex_color, opacity=0.92),
-                hovertext=sub.apply(lambda r:
-                    f"<b>{r.get('estacion','—')}</b><br>"
-                    f"🌬️ Viento: {r.get('viento_vel','—')} km/h<br>"
-                    f"🌧️ Precipitación: {r.get('precipitacion','—')} mm<br>"
-                    f"🌡️ Temp. actual: {r.get('temp_actual','—')} °C<br>"
-                    f"💧 Humedad: {r.get('humedad','—')}%<br>"
-                    f"<b>Tratamiento:</b> {r.get('recomendacion_tratamiento','—')}<br>"
-                    f"<b>Riego:</b> {r.get('recomendacion_riego','—')}<br>"
-                    f"Estado luz: {r.get('luz_estado','—')}", axis=1),
+                marker=go.scattermapbox.Marker(
+                    size=16,
+                    color=hex_color,
+                    opacity=1.0,
+                ),
+                text=hover_texts,
                 hoverinfo="text",
                 name=label,
             ))
         center_lat = df["latitud"].mean() if not df.empty else 38.9
         center_lon = df["longitud"].mean() if not df.empty else -6.3
         fig.update_layout(
-            mapbox=dict(style="open-street-map",
-                        center=dict(lat=center_lat, lon=center_lon),
-                        zoom=7),
+            mapbox=dict(
+                style="open-street-map",
+                center=dict(lat=center_lat, lon=center_lon),
+                zoom=7,
+            ),
             height=540, margin=dict(l=0, r=0, t=0, b=0),
-            legend=dict(orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
-                        bgcolor="rgba(255,255,255,0.9)", font=dict(size=12)),
+            legend=dict(
+                orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
+                bgcolor="rgba(255,255,255,0.9)", font=dict(size=13, color="#0d2b1a"),
+                bordercolor="#d1ead9", borderwidth=1,
+            ),
             paper_bgcolor="rgba(0,0,0,0)",
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -588,24 +619,38 @@ def render_mercados():
         buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
 
     # ── KPIs ──
+    # Calcular Al Alza / A la Baja desde v_comparativa_mercados (diferencial_arbitraje)
+    n_emparejados = 0
+    al_alza_merc = 0
+    a_la_baja_merc = 0
+    ultimo = None
+
     if not df_p.empty and "fecha" in df_p.columns:
         df_p["fecha"] = pd.to_datetime(df_p["fecha"])
-        ultimo  = df_p["fecha"].max()
-        df_hoy  = df_p[df_p["fecha"] == ultimo]
-        subidas = int((df_hoy["variacion_p"] > 0).sum()) if "variacion_p" in df_hoy.columns else 0
-        bajadas = int((df_hoy["variacion_p"] < 0).sum()) if "variacion_p" in df_hoy.columns else 0
-        c1,c2,c3,c4 = st.columns(4)
-        kpi_card(c1, "kpi-green", "📅", ultimo.strftime("%d/%m/%y"), "Última cotización", f"{len(df_hoy)} productos")
-        kpi_card(c2, "kpi-earth", "🌾", str(len(df_hoy)), "Productos cotizando", "Lonja Extremadura")
-        kpi_card(c3, "kpi-green", "📈", str(subidas), "Al alza", "vs día anterior")
-        kpi_card(c4, "kpi-red",   "📉", str(bajadas), "A la baja", "vs día anterior")
-        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+        ultimo = df_p["fecha"].max()
+
+    if not df_c.empty:
+        df_c["fecha"] = pd.to_datetime(df_c["fecha"])
+        df_ult_c_kpi = df_c.sort_values("fecha").groupby("producto").last().reset_index()
+        n_emparejados = len(df_ult_c_kpi)
+        if "diferencial_arbitraje" in df_ult_c_kpi.columns:
+            al_alza_merc   = int((df_ult_c_kpi["diferencial_arbitraje"].fillna(0) > 0).sum())
+            a_la_baja_merc = int((df_ult_c_kpi["diferencial_arbitraje"].fillna(0) < 0).sum())
+
+    c1, c2, c3, c4 = st.columns(4)
+    kpi_card(c1, "kpi-green", "📅",
+             ultimo.strftime("%d/%m/%y") if ultimo is not None else "—",
+             "Última cotización",
+             f"{len(df_p[df_p['fecha'] == ultimo]) if ultimo is not None and not df_p.empty else 0} productos")
+    kpi_card(c2, "kpi-earth", "🔗", str(n_emparejados), "Mercados Emparejados", "Local vs Internacional")
+    kpi_card(c3, "kpi-green", "📈", str(al_alza_merc),  "Al alza",   "Diferencial positivo")
+    kpi_card(c4, "kpi-red",   "📉", str(a_la_baja_merc), "A la baja", "Diferencial negativo")
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
     # ── Gráfico comparativo Precio Local vs Internacional ──
     section_header("📊", "Precios: Local vs Internacional (€/kg)", "Comparativa por producto")
 
     if not df_c.empty:
-        df_c["fecha"] = pd.to_datetime(df_c["fecha"])
         df_ult_c = df_c.sort_values("fecha").groupby("producto").last().reset_index()
 
         # Aplicar filtros
@@ -641,7 +686,8 @@ def render_mercados():
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     # ── Tabla "Precios del Día" ──
-    section_header("🗓️", "Precios del Día", f"Última actualización: {ultimo.strftime('%Y-%m-%d') if not df_p.empty and 'fecha' in df_p.columns else '—'}")
+    fecha_str_header = ultimo.strftime('%Y-%m-%d') if ultimo is not None else '—'
+    section_header("🗓️", "Precios del Día", f"Última actualización: {fecha_str_header}")
 
     if not df_c.empty:
         df_c_tab = df_c.sort_values("fecha").groupby("producto").last().reset_index()
