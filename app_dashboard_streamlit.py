@@ -222,11 +222,16 @@ def kpi_card(col, cls, icon, value, label, sub):
 
 CHART_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Plus Jakarta Sans"),
-    margin=dict(l=0, r=0, t=0, b=0),
+    font=dict(family="Plus Jakarta Sans", color="#0d2b1a"),
+    margin=dict(l=0, r=0, t=30, b=0),
     xaxis=dict(showgrid=False, color="#7aa98e"),
     yaxis=dict(gridcolor="#e8f5ee", color="#7aa98e"),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    legend=dict(
+        orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
+        font=dict(size=12, color="#0d2b1a"),
+        bgcolor="rgba(255,255,255,0.85)",
+        bordercolor="#d1ead9", borderwidth=1,
+    ),
 )
 
 COLORS = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7"]
@@ -521,24 +526,48 @@ def render_mapa():
     """, unsafe_allow_html=True)
 
     def color_estado(row):
-        """Determinar color según estado de la estación"""
+        """Color según recomendacion_tratamiento: verde=óptimo, amarillo=precaución, rojo=crítico"""
         trat = str(row.get("recomendacion_tratamiento", "") or "").lower()
-        riego = str(row.get("recomendacion_riego", "") or "").lower()
-        tramo = str(row.get("tramo_energia", "") or "").lower()
-        if "crítico" in trat or "peligro" in trat or "punta" in tramo:
+        # Palabras clave para crítico (rojo)
+        if any(x in trat for x in ["crític", "peligro", "no tratar", "prohibido", "suspender"]):
             return "#ef4444"
-        elif "precaución" in trat or "llano" in tramo or "discrecional" in riego:
+        # Palabras clave para precaución (amarillo)
+        if any(x in trat for x in ["precaución", "precaucion", "esperar", "vigilar", "atención", "atencion", "llano", "discrecional"]):
             return "#f59e0b"
+        # Por defecto óptimo (verde)
         return "#27a05e"
 
     if not df_filtered.empty:
         df_filtered = df_filtered.copy()
         df_filtered["_color"] = df_filtered.apply(color_estado, axis=1)
 
+    # ── Calcular zoom y centro dinámicos según el filtro ──
+    def calc_zoom_center(dff, df_base):
+        """Calcula zoom y centro: si hay filtro activo hace zoom sobre la selección"""
+        if dff.empty:
+            lat_c = df_base["latitud"].mean() if not df_base.empty else 38.9
+            lon_c = df_base["longitud"].mean() if not df_base.empty else -6.3
+            return lat_c, lon_c, 7
+        lat_c = dff["latitud"].mean()
+        lon_c = dff["longitud"].mean()
+        if len(dff) == 1:
+            return lat_c, lon_c, 11
+        lat_range = dff["latitud"].max() - dff["latitud"].min()
+        lon_range = dff["longitud"].max() - dff["longitud"].min()
+        max_range = max(lat_range, lon_range)
+        if max_range < 0.1:   zoom = 11
+        elif max_range < 0.3: zoom = 10
+        elif max_range < 0.8: zoom = 9
+        elif max_range < 1.5: zoom = 8
+        elif max_range < 3.0: zoom = 7
+        else:                  zoom = 6
+        return lat_c, lon_c, zoom
+
+    center_lat, center_lon, zoom_level = calc_zoom_center(df_filtered, df)
+
     # ── Mapa a pantalla completa ──
     try:
         fig = go.Figure()
-        # Agrupar por color para la leyenda
         color_groups = {
             "#27a05e": "Óptimo",
             "#f59e0b": "Precaución",
@@ -561,27 +590,21 @@ def render_mapa():
                 lat=sub["latitud"].tolist(),
                 lon=sub["longitud"].tolist(),
                 mode="markers",
-                marker=go.scattermapbox.Marker(
-                    size=16,
-                    color=hex_color,
-                    opacity=1.0,
-                ),
+                marker=go.scattermapbox.Marker(size=16, color=hex_color, opacity=1.0),
                 text=hover_texts,
                 hoverinfo="text",
                 name=label,
             ))
-        center_lat = df["latitud"].mean() if not df.empty else 38.9
-        center_lon = df["longitud"].mean() if not df.empty else -6.3
         fig.update_layout(
             mapbox=dict(
                 style="open-street-map",
                 center=dict(lat=center_lat, lon=center_lon),
-                zoom=7,
+                zoom=zoom_level,
             ),
             height=540, margin=dict(l=0, r=0, t=0, b=0),
             legend=dict(
                 orientation="h", yanchor="top", y=0.01, xanchor="left", x=0.01,
-                bgcolor="rgba(255,255,255,0.9)", font=dict(size=13, color="#0d2b1a"),
+                bgcolor="rgba(255,255,255,0.92)", font=dict(size=13, color="#0d2b1a"),
                 bordercolor="#d1ead9", borderwidth=1,
             ),
             paper_bgcolor="rgba(0,0,0,0)",
@@ -617,7 +640,7 @@ def render_mercados():
             sector_opts += sorted(df_p["sector"].dropna().unique().tolist())
         filtro_sector = st.selectbox("Sector", sector_opts)
     with f2:
-        buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
+        buscar_prod = st.text_input("🔍 Buscar mercado", placeholder="Nombre del mercado o producto...")
 
     # ── KPIs ──
     # Calcular Al Alza / A la Baja desde v_comparativa_mercados (diferencial_arbitraje)
@@ -648,41 +671,49 @@ def render_mercados():
     kpi_card(c4, "kpi-red",   "📉", str(a_la_baja_merc), "A la baja", "Diferencial negativo")
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
-    # ── Gráfico comparativo Precio Local vs Internacional ──
-    section_header("📊", "Precios: Local vs Internacional (€/kg)", "Comparativa por producto")
-
+    # ── Dataset filtrado compartido (afecta gráfico Y tabla) ──
+    df_vis = pd.DataFrame()
     if not df_c.empty:
-        df_ult_c = df_c.sort_values("fecha").groupby("producto").last().reset_index()
-
-        # Aplicar filtros
+        df_vis = df_c.sort_values("fecha").groupby("producto").last().reset_index()
         if buscar_prod:
-            df_ult_c = df_ult_c[df_ult_c["producto"].str.contains(buscar_prod, case=False, na=False)]
+            df_vis = df_vis[df_vis["producto"].str.contains(buscar_prod, case=False, na=False)]
+        if filtro_sector != "Todos" and "sector" in df_vis.columns:
+            df_vis = df_vis[df_vis["sector"] == filtro_sector]
 
-        if not df_ult_c.empty:
-            fig_bar = go.Figure()
-            fig_bar.add_trace(go.Bar(
-                name="Precio Local",
-                x=df_ult_c["producto"],
-                y=df_ult_c["precio_local_kg"],
-                marker_color="#27a05e",
-                opacity=0.9,
-                hovertemplate="<b>%{x}</b><br>Local: %{y:.2f} €/kg<extra></extra>",
-            ))
-            fig_bar.add_trace(go.Bar(
-                name="Precio Internacional",
-                x=df_ult_c["producto"],
-                y=df_ult_c["precio_internacional_kg"],
-                marker_color="#2d2d2d",
-                opacity=0.85,
-                hovertemplate="<b>%{x}</b><br>Internacional: %{y:.2f} €/kg<extra></extra>",
-            ))
-            layout_bar = {**CHART_LAYOUT}
-            layout_bar["barmode"] = "group"
-            layout_bar["xaxis"] = dict(showgrid=False, color="#7aa98e")
-            layout_bar["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e")
-            layout_bar["legend"] = dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5)
-            fig_bar.update_layout(height=320, **layout_bar)
-            st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
+    # ── Gráfico comparativo Precio Local vs Internacional ──
+    section_header("📊", "Precios: Local vs Internacional (€/kg)", "Comparativa por producto — filtros aplicados")
+
+    if not df_vis.empty and "precio_local_kg" in df_vis.columns:
+        fig_bar = go.Figure()
+        fig_bar.add_trace(go.Bar(
+            name="Precio Local",
+            x=df_vis["producto"],
+            y=df_vis["precio_local_kg"],
+            marker_color="#27a05e",
+            opacity=0.9,
+            hovertemplate="<b>%{x}</b><br>Local: %{y:.2f} €/kg<extra></extra>",
+        ))
+        fig_bar.add_trace(go.Bar(
+            name="Precio Internacional",
+            x=df_vis["producto"],
+            y=df_vis["precio_internacional_kg"],
+            marker_color="#2d2d2d",
+            opacity=0.85,
+            hovertemplate="<b>%{x}</b><br>Internacional: %{y:.2f} €/kg<extra></extra>",
+        ))
+        layout_bar = {**CHART_LAYOUT}
+        layout_bar["barmode"] = "group"
+        layout_bar["xaxis"] = dict(showgrid=False, color="#0d2b1a", tickfont=dict(color="#0d2b1a", size=11))
+        layout_bar["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="€/kg")
+        layout_bar["legend"] = dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
+            font=dict(size=12, color="#0d2b1a"),
+            bgcolor="rgba(255,255,255,0.85)", bordercolor="#d1ead9", borderwidth=1,
+        )
+        fig_bar.update_layout(height=320, **layout_bar)
+        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
+    elif df_vis.empty:
+        st.info("No hay datos que coincidan con los filtros aplicados")
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
@@ -690,14 +721,19 @@ def render_mercados():
     fecha_str_header = ultimo.strftime('%Y-%m-%d') if ultimo is not None else '—'
     section_header("🗓️", "Precios del Día", f"Última actualización: {fecha_str_header}")
 
-    if not df_c.empty:
-        df_c_tab = df_c.sort_values("fecha").groupby("producto").last().reset_index()
-
-        # Aplicar filtros
-        if buscar_prod:
-            df_c_tab = df_c_tab[df_c_tab["producto"].str.contains(buscar_prod, case=False, na=False)]
-        if filtro_sector != "Todos" and "sector" in df_c_tab.columns:
-            df_c_tab = df_c_tab[df_c_tab["sector"] == filtro_sector]
+    if not df_vis.empty:
+        # Botón exportar
+        cols_export = [c for c in ["producto", "precio_local_kg", "precio_internacional_kg",
+                                    "diferencial_arbitraje", "sector", "relacion", "fecha"] if c in df_vis.columns]
+        csv_data = df_vis[cols_export].to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="⬇️ Exportar tabla CSV",
+            data=csv_data,
+            file_name=f"monitor_mercados_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            key="export_mercados",
+        )
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
         # Cabecera tabla
         st.markdown("""
@@ -712,14 +748,13 @@ def render_mercados():
         </div>
         """, unsafe_allow_html=True)
 
-        for _, row in df_c_tab.iterrows():
+        for _, row in df_vis.iterrows():
             dif   = float(row.get("diferencial_arbitraje", 0) or 0)
             local = float(row.get("precio_local_kg", 0) or 0)
             intl  = float(row.get("precio_internacional_kg", 0) or 0)
             sign  = "+" if dif > 0 else ""
             b_bg  = "#dcfce7" if dif > 0 else "#fee2e2"
             b_col = "#15803d" if dif > 0 else "#b91c1c"
-            # Tendencia: flecha verde sube, roja baja
             if dif > 0:
                 tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
             elif dif < 0:
@@ -746,13 +781,14 @@ def render_mercados():
             """, unsafe_allow_html=True)
 
     elif not df_p.empty:
-        # Fallback: mostrar tabla de precios locales
         df_tab = df_p.copy()
         if buscar_prod:
             df_tab = df_tab[df_tab["producto"].str.contains(buscar_prod, case=False, na=False)]
         if filtro_sector != "Todos" and "sector" in df_tab.columns:
             df_tab = df_tab[df_tab["sector"] == filtro_sector]
         cols_show = [c for c in ["fecha","sector","producto","precio_min","precio_max","unidad","variacion_p"] if c in df_tab.columns]
+        st.download_button("⬇️ Exportar CSV", df_tab[cols_show].to_csv(index=False).encode("utf-8"),
+                           f"mercados_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv", key="export_merc_fb")
         st.dataframe(df_tab[cols_show].sort_values("fecha", ascending=False).reset_index(drop=True),
                      use_container_width=True, height=300)
     else:
@@ -816,56 +852,65 @@ def render_monitor_productos():
     if buscar_prod and "producto" in df_f.columns:
         df_f = df_f[df_f["producto"].str.contains(buscar_prod, case=False, na=False)]
 
-    # ── Gráfico Timeline — evolución de precios por categoría ──
-    section_header("📈", "Evolución de Precios por Categoría", "Histórico de precio_cierre agrupado por categoría")
+    # ── Gráfico Timeline — variación de precios por categoría ──
+    section_header("📈", "Variación de Precios por Categoría", "Evolución del precio_cierre por fecha y categoría — filtros aplicados")
 
-    if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns:
+    if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns and "categoria" in df_f.columns:
         df_chart = df_f.copy()
         df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
+        df_chart = df_chart.dropna(subset=["precio_cierre", "fecha"])
+        df_chart = df_chart.sort_values("fecha")
 
-        # Agrupar por fecha + categoría: media del precio_cierre
-        if "categoria" in df_chart.columns:
-            df_grouped = (
-                df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
-                .mean().reset_index()
-                .sort_values("fecha")
-            )
-            categorias = df_grouped["categoria"].dropna().unique()
-            fig = go.Figure()
-            palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
-            for i, cat in enumerate(categorias):
-                sub = df_grouped[df_grouped["categoria"] == cat]
-                color = palette[i % len(palette)]
-                r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
-                # Área sombreada bajo la línea
-                fig.add_trace(go.Scatter(
-                    x=sub["fecha"], y=sub["precio_cierre"],
-                    fill="tozeroy",
-                    fillcolor=f"rgba({r},{g},{b},0.07)",
-                    line=dict(width=0), showlegend=False, hoverinfo="skip",
-                    mode="lines",
-                ))
-                # Línea principal
-                fig.add_trace(go.Scatter(
-                    x=sub["fecha"], y=sub["precio_cierre"],
-                    name=str(cat),
-                    line=dict(color=color, width=2.5),
-                    mode="lines+markers",
-                    marker=dict(size=5),
-                    hovertemplate=f"<b>{cat}</b><br>%{{x|%d/%m/%Y}}<br>Precio medio: %{{y:.4f}}<extra></extra>",
-                ))
-            layout_t = {**CHART_LAYOUT}
-            layout_t["xaxis"] = dict(showgrid=False, color="#7aa98e", tickformat="%b %Y", title="")
-            layout_t["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="Precio cierre")
-            layout_t["legend"] = dict(
-                orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
-                font=dict(size=12, color="#0d2b1a"),
-            )
-            layout_t["hovermode"] = "x unified"
-            fig.update_layout(height=360, **layout_t)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-        else:
-            st.info("La vista no contiene el campo 'categoria' para agrupar")
+        # Media de precio_cierre por fecha+categoría (sin agrupar en periodos, fecha exacta)
+        df_grouped = (
+            df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
+            .mean().reset_index()
+        )
+
+        categorias = df_grouped["categoria"].dropna().unique()
+        palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
+        fig = go.Figure()
+
+        for i, cat in enumerate(categorias):
+            sub = df_grouped[df_grouped["categoria"] == cat].sort_values("fecha")
+            color = palette[i % len(palette)]
+            r_c, g_c, b_c = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
+            fig.add_trace(go.Scatter(
+                x=sub["fecha"],
+                y=sub["precio_cierre"],
+                name=str(cat),
+                line=dict(color=color, width=2.2),
+                mode="lines+markers",
+                marker=dict(size=5, color=color),
+                hovertemplate=(
+                    f"<b>{cat}</b><br>"
+                    "%{x|%d/%m/%Y}<br>"
+                    "Precio: <b>%{y:.4f}</b><extra></extra>"
+                ),
+            ))
+
+        layout_t = {**CHART_LAYOUT}
+        layout_t["xaxis"] = dict(
+            showgrid=True, gridcolor="#e8f5ee",
+            color="#0d2b1a", tickfont=dict(color="#0d2b1a", size=11),
+            tickformat="%d/%m/%y", title="",
+        )
+        layout_t["yaxis"] = dict(
+            gridcolor="#e8f5ee", color="#0d2b1a",
+            tickfont=dict(color="#0d2b1a", size=11),
+            title="Precio cierre",
+        )
+        layout_t["legend"] = dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
+            font=dict(size=12, color="#0d2b1a"),
+            bgcolor="rgba(255,255,255,0.9)", bordercolor="#d1ead9", borderwidth=1,
+        )
+        layout_t["hovermode"] = "x unified"
+        layout_t["margin"] = dict(l=0, r=0, t=50, b=0)
+        fig.update_layout(height=380, **layout_t)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    elif df_f.empty:
+        st.info("No hay datos que coincidan con los filtros aplicados")
     else:
         st.info("Sin datos suficientes para el gráfico de evolución")
 
@@ -878,6 +923,17 @@ def render_monitor_productos():
     if not df_f.empty:
         cols_tabla = [c for c in ["fecha", "producto", "precio_cierre", "moneda", "var_precio", "categoria", "tendencia"]
                       if c in df_f.columns]
+
+        # Botón exportar
+        csv_data = df_f[cols_tabla].sort_values("fecha", ascending=False).to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="⬇️ Exportar tabla CSV",
+            data=csv_data,
+            file_name=f"monitor_productos_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            key="export_productos",
+        )
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
         # Cabecera de tabla personalizada
         col_widths = "1.2fr " + " ".join(["1.4fr"] * (len(cols_tabla) - 1))
@@ -903,7 +959,6 @@ def render_monitor_productos():
             tend_val = str(row.get("tendencia", "") or "").lower()
             var_val  = row.get("var_precio", None)
 
-            # Color tendencia
             if any(x in tend_val for x in ["alza", "sube", "alcista", "up", "positiv"]):
                 tend_bg, tend_col, tend_svg = "#dcfce7", "#15803d", \
                     '<svg width="18" height="14" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -914,7 +969,6 @@ def render_monitor_productos():
                 tend_bg, tend_col, tend_svg = "#fef3c7", "#b45309", \
                     '<svg width="18" height="14" viewBox="0 0 22 16"><line x1="2" y1="8" x2="20" y2="8" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/></svg>'
 
-            # Formatear variación
             try:
                 var_f = float(var_val) if var_val is not None else None
                 var_str = (f"+{var_f:.2f}%" if var_f > 0 else f"{var_f:.2f}%") if var_f is not None else "—"
@@ -922,21 +976,18 @@ def render_monitor_productos():
             except Exception:
                 var_str, var_color = str(var_val or "—"), "#475569"
 
-            # Formatear precio
             try:
                 precio_f = float(row.get("precio_cierre", 0) or 0)
                 precio_str = f"{precio_f:.4f}"
             except Exception:
                 precio_str = str(row.get("precio_cierre", "—"))
 
-            # Fecha
             fecha_v = row.get("fecha", "")
             try:
                 fecha_str = pd.to_datetime(fecha_v).strftime("%d/%m/%Y")
             except Exception:
                 fecha_str = str(fecha_v)
 
-            # Construir celdas dinámicamente según columnas disponibles
             cells = []
             for c in cols_tabla:
                 if c == "fecha":
