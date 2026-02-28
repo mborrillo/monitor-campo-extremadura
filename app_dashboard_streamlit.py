@@ -290,6 +290,7 @@ def render_sidebar():
             "🏠  Dashboard",
             "🗺️  Mapa de Operaciones",
             "📊  Monitor de Mercados",
+            "🌐  Monitor de Productos",
             "🔔  Alertas",
             "⚙️  Configuración",
         ], label_visibility="collapsed")
@@ -758,7 +759,218 @@ def render_mercados():
         st.info("Sin datos de mercados disponibles")
 
 # ─────────────────────────────────────────────
-# ALERTAS
+# MONITOR DE PRODUCTOS INTERNACIONALES
+# ─────────────────────────────────────────────
+def render_monitor_productos():
+    page_hero("🌐 Mercados Internacionales", "Monitor de Productos", "Seguimiento de precios internacionales por categoría")
+
+    df = load("v_monitor_productos", order_col="fecha", limit=500)
+
+    # ── Filtros ──
+    f1, f2, f3 = st.columns([1, 1, 2])
+    with f1:
+        cat_opts = ["Todas"]
+        if not df.empty and "categoria" in df.columns:
+            cat_opts += sorted(df["categoria"].dropna().unique().tolist())
+        filtro_cat = st.selectbox("Categoría", cat_opts)
+    with f2:
+        tend_opts = ["Todas"]
+        if not df.empty and "tendencia" in df.columns:
+            tend_opts += sorted(df["tendencia"].dropna().unique().tolist())
+        filtro_tend = st.selectbox("Tendencia", tend_opts)
+    with f3:
+        buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
+
+    # ── KPIs ──
+    ultimo_prod = None
+    n_productos_int = 0
+    n_alza = 0
+    n_baja = 0
+
+    if not df.empty:
+        if "fecha" in df.columns:
+            df["fecha"] = pd.to_datetime(df["fecha"])
+            ultimo_prod = df["fecha"].max()
+        if "producto" in df.columns:
+            n_productos_int = df["producto"].nunique()
+        if "tendencia" in df.columns:
+            tend_lower = df.groupby("producto")["fecha"].idxmax().map(lambda i: str(df.loc[i, "tendencia"]).lower() if i in df.index else "")
+            n_alza = int((tend_lower.str.contains("alza|sube|alcista|up|positiv", na=False)).sum())
+            n_baja = int((tend_lower.str.contains("baja|baj|bajista|down|negativ", na=False)).sum())
+
+    c1, c2, c3, c4 = st.columns(4)
+    kpi_card(c1, "kpi-green", "📅",
+             ultimo_prod.strftime("%d/%m/%y") if ultimo_prod is not None else "—",
+             "Última cotización", "Fecha más reciente")
+    kpi_card(c2, "kpi-blue",  "🌐", str(n_productos_int), "Productos Internacionales", "En seguimiento")
+    kpi_card(c3, "kpi-green", "📈", str(n_alza),  "En Alza",  "Tendencia positiva")
+    kpi_card(c4, "kpi-red",   "📉", str(n_baja),  "En Baja",  "Tendencia negativa")
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
+    # ── Aplicar filtros al dataframe ──
+    df_f = df.copy()
+    if filtro_cat != "Todas" and "categoria" in df_f.columns:
+        df_f = df_f[df_f["categoria"] == filtro_cat]
+    if filtro_tend != "Todas" and "tendencia" in df_f.columns:
+        df_f = df_f[df_f["tendencia"] == filtro_tend]
+    if buscar_prod and "producto" in df_f.columns:
+        df_f = df_f[df_f["producto"].str.contains(buscar_prod, case=False, na=False)]
+
+    # ── Gráfico Timeline — evolución de precios por categoría ──
+    section_header("📈", "Evolución de Precios por Categoría", "Histórico de precio_cierre agrupado por categoría")
+
+    if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns:
+        df_chart = df_f.copy()
+        df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
+
+        # Agrupar por fecha + categoría: media del precio_cierre
+        if "categoria" in df_chart.columns:
+            df_grouped = (
+                df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
+                .mean().reset_index()
+                .sort_values("fecha")
+            )
+            categorias = df_grouped["categoria"].dropna().unique()
+            fig = go.Figure()
+            palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
+            for i, cat in enumerate(categorias):
+                sub = df_grouped[df_grouped["categoria"] == cat]
+                color = palette[i % len(palette)]
+                r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
+                # Área sombreada bajo la línea
+                fig.add_trace(go.Scatter(
+                    x=sub["fecha"], y=sub["precio_cierre"],
+                    fill="tozeroy",
+                    fillcolor=f"rgba({r},{g},{b},0.07)",
+                    line=dict(width=0), showlegend=False, hoverinfo="skip",
+                    mode="lines",
+                ))
+                # Línea principal
+                fig.add_trace(go.Scatter(
+                    x=sub["fecha"], y=sub["precio_cierre"],
+                    name=str(cat),
+                    line=dict(color=color, width=2.5),
+                    mode="lines+markers",
+                    marker=dict(size=5),
+                    hovertemplate=f"<b>{cat}</b><br>%{{x|%d/%m/%Y}}<br>Precio medio: %{{y:.4f}}<extra></extra>",
+                ))
+            layout_t = {**CHART_LAYOUT}
+            layout_t["xaxis"] = dict(showgrid=False, color="#7aa98e", tickformat="%b %Y", title="")
+            layout_t["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="Precio cierre")
+            layout_t["legend"] = dict(
+                orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
+                font=dict(size=12, color="#0d2b1a"),
+            )
+            layout_t["hovermode"] = "x unified"
+            fig.update_layout(height=360, **layout_t)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.info("La vista no contiene el campo 'categoria' para agrupar")
+    else:
+        st.info("Sin datos suficientes para el gráfico de evolución")
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # ── Tabla: Evolución de Productos Internacionales ──
+    fecha_header = ultimo_prod.strftime("%Y-%m-%d") if ultimo_prod is not None else "—"
+    section_header("📋", "Evolución de Productos Internacionales", f"Última actualización: {fecha_header}")
+
+    if not df_f.empty:
+        cols_tabla = [c for c in ["fecha", "producto", "precio_cierre", "moneda", "var_precio", "categoria", "tendencia"]
+                      if c in df_f.columns]
+
+        # Cabecera de tabla personalizada
+        col_widths = "1.2fr " + " ".join(["1.4fr"] * (len(cols_tabla) - 1))
+        col_labels = {
+            "fecha": "Fecha", "producto": "Producto", "precio_cierre": "Precio Cierre",
+            "moneda": "Moneda", "var_precio": "Var. Precio", "categoria": "Categoría", "tendencia": "Tendencia",
+        }
+        header_html = "".join([
+            f'<span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">{col_labels.get(c, c)}</span>'
+            for c in cols_tabla
+        ])
+        st.markdown(f"""
+        <div style="display:grid;grid-template-columns:{col_widths};gap:8px;
+                    padding:10px 20px;background:#f0faf4;border-radius:10px 10px 0 0;
+                    border:1px solid var(--border);border-bottom:2px solid var(--border);margin-bottom:2px;">
+            {header_html}
+        </div>
+        """, unsafe_allow_html=True)
+
+        df_tabla = df_f[cols_tabla].sort_values("fecha", ascending=False).head(100).reset_index(drop=True)
+
+        for _, row in df_tabla.iterrows():
+            tend_val = str(row.get("tendencia", "") or "").lower()
+            var_val  = row.get("var_precio", None)
+
+            # Color tendencia
+            if any(x in tend_val for x in ["alza", "sube", "alcista", "up", "positiv"]):
+                tend_bg, tend_col, tend_svg = "#dcfce7", "#15803d", \
+                    '<svg width="18" height="14" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            elif any(x in tend_val for x in ["baja", "bajista", "down", "negativ"]):
+                tend_bg, tend_col, tend_svg = "#fee2e2", "#b91c1c", \
+                    '<svg width="18" height="14" viewBox="0 0 22 16"><polyline points="2,3 8,9 13,6 20,13" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,13 20,13 20,8" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            else:
+                tend_bg, tend_col, tend_svg = "#fef3c7", "#b45309", \
+                    '<svg width="18" height="14" viewBox="0 0 22 16"><line x1="2" y1="8" x2="20" y2="8" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/></svg>'
+
+            # Formatear variación
+            try:
+                var_f = float(var_val) if var_val is not None else None
+                var_str = (f"+{var_f:.2f}%" if var_f > 0 else f"{var_f:.2f}%") if var_f is not None else "—"
+                var_color = "#15803d" if (var_f or 0) > 0 else ("#b91c1c" if (var_f or 0) < 0 else "#475569")
+            except Exception:
+                var_str, var_color = str(var_val or "—"), "#475569"
+
+            # Formatear precio
+            try:
+                precio_f = float(row.get("precio_cierre", 0) or 0)
+                precio_str = f"{precio_f:.4f}"
+            except Exception:
+                precio_str = str(row.get("precio_cierre", "—"))
+
+            # Fecha
+            fecha_v = row.get("fecha", "")
+            try:
+                fecha_str = pd.to_datetime(fecha_v).strftime("%d/%m/%Y")
+            except Exception:
+                fecha_str = str(fecha_v)
+
+            # Construir celdas dinámicamente según columnas disponibles
+            cells = []
+            for c in cols_tabla:
+                if c == "fecha":
+                    cells.append(f'<span style="font-family:\'DM Mono\',monospace;font-size:0.8rem;color:#7aa98e;">{fecha_str}</span>')
+                elif c == "producto":
+                    cells.append(f'<span style="font-weight:600;font-size:0.88rem;color:#0d2b1a;">{row.get("producto","—")}</span>')
+                elif c == "precio_cierre":
+                    cells.append(f'<span style="font-family:\'DM Mono\',monospace;font-size:0.88rem;color:#1a5c38;font-weight:600;">{precio_str}</span>')
+                elif c == "moneda":
+                    cells.append(f'<span style="font-size:0.82rem;color:#475569;font-weight:500;">{row.get("moneda","—")}</span>')
+                elif c == "var_precio":
+                    cells.append(f'<span style="font-family:\'DM Mono\',monospace;font-size:0.85rem;font-weight:700;color:{var_color};">{var_str}</span>')
+                elif c == "categoria":
+                    cells.append(f'<span style="font-size:0.82rem;color:#1a5c38;background:#f0faf4;padding:2px 8px;border-radius:6px;font-weight:600;">{row.get("categoria","—")}</span>')
+                elif c == "tendencia":
+                    cells.append(f'<span style="display:inline-flex;align-items:center;gap:6px;background:{tend_bg};color:{tend_col};font-weight:700;font-size:0.78rem;padding:3px 10px;border-radius:20px;">{tend_svg} {str(row.get("tendencia","—")).upper()}</span>')
+
+            cells_html = "".join([f"<span>{cell}</span>" for cell in cells])
+            st.markdown(f"""
+            <div style="display:grid;grid-template-columns:{col_widths};gap:8px;
+                        align-items:center;padding:12px 20px;background:white;
+                        border:1px solid var(--border);border-top:none;
+                        transition:background 0.15s;">
+                {cells_html}
+            </div>
+            """, unsafe_allow_html=True)
+
+        if len(df_f) > 100:
+            st.caption(f"Mostrando los 100 registros más recientes de {len(df_f)} totales.")
+    else:
+        st.info("Sin datos disponibles con los filtros seleccionados")
+
+
+# ─────────────────────────────────────────────
 # ─────────────────────────────────────────────
 def render_alertas():
     page_hero("🔔 Notificaciones", "Centro de Alertas", "Clima extremo y energía — actualizados automáticamente")
@@ -984,7 +1196,8 @@ def main():
     try:
         if   "Dashboard"   in page: render_dashboard()
         elif "Mapa"        in page: render_mapa()
-        elif "Monitor"     in page: render_mercados()
+        elif "Mercados"    in page: render_mercados()
+        elif "Productos"   in page: render_monitor_productos()
         elif "Alertas"     in page: render_alertas()
         elif "Configuraci" in page: render_configuracion()
     except Exception as e:
