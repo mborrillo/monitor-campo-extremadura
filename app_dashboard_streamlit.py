@@ -706,12 +706,6 @@ def render_mercados():
     section_header("🗓️", "Precios del Día", f"Última actualización: {fecha_str_header}")
 
     if not df_vis.empty:
-        # Tabla con popup nativo de Streamlit (permite buscar, ordenar, exportar como en Mapa de Operaciones)
-        cols_export = [c for c in ["producto", "precio_local_kg", "precio_internacional_kg",
-                                    "diferencial_arbitraje", "sector", "relacion", "fecha"] if c in df_vis.columns]
-        st.dataframe(df_vis[cols_export].reset_index(drop=True), use_container_width=True, height=300)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-
         # Cabecera tabla visual
         st.markdown("""
         <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
@@ -898,11 +892,6 @@ def render_monitor_productos():
     if not df_f.empty:
         cols_tabla = [c for c in ["fecha", "producto", "precio_cierre", "moneda", "var_precio", "categoria", "tendencia"]
                       if c in df_f.columns]
-
-        # Tabla con popup nativo (mismas funcionalidades que Mapa de Operaciones)
-        st.dataframe(df_f[cols_tabla].sort_values("fecha", ascending=False).reset_index(drop=True),
-                     use_container_width=True, height=300)
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
         # Cabecera de tabla visual personalizada
         col_widths = "1.2fr " + " ".join(["1.4fr"] * (len(cols_tabla) - 1))
