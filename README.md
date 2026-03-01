@@ -1,72 +1,187 @@
-# 🚜 AgroTech : Inteligencia de Mercados Agrarios
+# 🌿 AgroTech ES — Monitor Campo Extremadura
 
-AgroTech Extremadura es una plataforma de inteligencia de datos diseñada para transformar la toma de decisiones en el sector agropecuario. No es solo un panel de control; es un puente entre la realidad productiva de las parcelas extremeñas y los movimientos de los mercados globales.
+> Plataforma de inteligencia de datos para el sector agropecuario de Extremadura. Conecta el clima local, los precios de la lonja, los mercados internacionales y el coste energético en un único panel de decisión.
 
-## 💡 ¿Qué es y por qué existe esta herramienta?
-En el modelo agrícola tradicional, el productor suele estar desconectado de los precios de Chicago o de la evolución horaria del mercado energético. AgroTech Extremadura democratiza el acceso a la información compleja, traduciéndola en acciones concretas.
+**🔗 Demo Streamlit:** [agro-tech.streamlit.app](https://agro-tech.streamlit.app) *(acceso libre — cualquier usuario y contraseña)*
 
-El Diferencial: ¿Qué la hace única?
-A diferencia de otras apps de clima, aquí vinculamos:
+---
 
-Clima Local Real: Datos directos de estaciones de la AEMET (Badajoz, Cáceres, Mérida, entre otras).
+## ¿Qué hace este proyecto?
 
-Arbitraje de Mercados: Compara el precio de la Lonja local con los futuros internacionales de Chicago, permitiendo detectar cuándo el precio local está infravalorado, o por encima del precio internacional.
+Los agricultores y cooperativas de Extremadura operan con información fragmentada: el precio de la lonja local llega tarde, el mercado de futuros de Chicago parece distante, y la tarifa eléctrica cambia cada hora. Este dashboard centraliza todo eso y lo traduce en acciones concretas.
 
-Eficiencia Energética: Cruza el precio de la luz (PVPC) con la actividad de riego, consiguiendo optimizar costos.
+**Tres preguntas que responde esta herramienta:**
 
-¿Para quién es?
-Productores Individuales: Optimización de riego y tratamientos.
+1. **¿Cuándo y dónde regar?** Cruzando clima real (AEMET) con el precio de la luz (PVPC), el sistema indica si conviene regar ahora o esperar a la franja más barata.
+2. **¿A qué precio vender?** Comparando el precio local (Lonja de Extremadura) con los futuros internacionales (Chicago/NY), se detecta si el mercado local está infravalorado.
+3. **¿Hay riesgo climático?** Alertas automáticas por temperaturas extremas, heladas o condiciones adversas para tratamientos fitosanitarios.
 
-Gerentes de Cooperativas: Visión estratégica para la comercialización de cosechas.
+---
 
-Empresas de Seguros Agrarios: Monitorización de riesgos climáticos extremos.
+## ¿A quién va dirigido?
 
-## 🏛️ Arquitectura de Datos (Supabase SQL)
-El cerebro de la herramienta reside en una base de datos PostgreSQL, estructurada para ser escalable y rápida.
+| Perfil | Qué obtiene |
+|--------|------------|
+| **Productor individual** | Recomendaciones de riego y tratamiento por estación, alertas de helada, precio de su cosecha vs. mercado global |
+| **Gerente de cooperativa** | Visión sectorial (Cereales, Aceites, Ganadería…), comparativa local vs. internacional, exportación de datos |
+| **Técnico agrónomo** | Datos históricos de clima y precios, mapa de operaciones con estado por estación |
+| **Empresa de seguros agrarios** | Monitorización de alertas climáticas extremas con histórico fechado |
 
-- Tablas (Donde guardamos los datos brutos)
+> **Nota:** La herramienta es funcional hoy para Extremadura, pero la arquitectura está diseñada para escalar a cualquier región con acceso a la API de AEMET y lonjas de referencia.
 
-| Tabla                | Qúe es/Para que sirve                       | Utilidad / Fundamento                             |
-|----------------------|---------------------------------------------|---------------------------------------------------|
-| datos_clima          | Registro de variables meteorológicas       | Histórico para predecir anomalías en las campañas|
-| precios_agricolas    | Base de datos de la Lonja de Extremadura   | Valor real al que cierran las operaciones locales|
-| mercados_internacionales | Datos de futuros (Chicago/NY) | Permite ver la tendencia global antes que llegue a Extremadura|
-| datos_energia | Precios de la electricidad por hora | Fundamental para el cálculo de márgenes de beneficio en regadío |
-|correlaciones_agro | El Corazón: Mapeo de productos | Vincula productos locales (ej. Cordero) con mercados de referencia (ej. Ganado Vivo |
+---
 
-- Vistas SQL (La Inteligencia del Sistema)
+## Funcionalidades del Dashboard
 
-| Vista                | Para que sirve |
-|----------------------|----------------|
-| v_asesor_operaciones | Traduce el viento y la lluvia en un semáforo de "Apto/No Apto" para pulverizar o regar |
-| v_comparativa_mercados | Realiza el cálculo de arbitraje (diferencia de precio local vs internacional) convertido a €/kg |
-| v_salud_sectores| Agrupa los productos para decir si el sector (Cereales, Aceites, etc.) está en expansión o contracción |
-| v_alertas_clima_extrema | Filtra automáticamente temperaturas críticas para prevenir heladas o golpes de calor |
+- **Dashboard principal** — KPIs de temperatura, humedad, precio kWh, alertas activas y salud por sector
+- **Mapa de Operaciones** — Estaciones geolocalizadas con estado (Óptimo / Precaución / Crítico) según tratamiento
+- **Monitor de Mercados** — Comparativa precio local vs. internacional con diferencial de arbitraje
+- **Monitor de Productos** — Evolución histórica de precios internacionales por categoría, exportable a Excel
+- **Centro de Alertas** — Clima extremo y energía con estado por franja horaria
+- **Configuración** — Estado de conexión a Supabase y estadísticas de tablas
 
-## ⚙️ Estructura del Software (Python)
-Los scripts actúan como "mayordomos digitales" que trabajan 24/7 de forma automatizada mediante GitHub Actions.
+---
 
-- clima_monitor.py: Conecta con la API de AEMET. Su lógica "blinda" el sistema contra fallos de conexión, asegurando que siempre tengamos el clima de localidades como Badajoz, Cáceres, Mérida (y varias mas), actualizado.
+## Arquitectura
 
-- mercado_monitor.py: Extrae datos de Yahoo Finance. Realiza una limpieza de "anomalías" para evitar que un error de valores en el mercado internacional altere o "ensucie" los informes.
+```
+FUENTES EXTERNAS          SCRIPTS ETL (Python)       BASE DE DATOS          DASHBOARD
+─────────────────         ────────────────────        ─────────────────      ──────────
+AEMET API          ──▶   clima_monitor.py      ──▶   datos_clima            
+Yahoo Finance      ──▶   mercado_monitor.py    ──▶   mercados_int.          ──▶  Streamlit
+PVPC (REE)         ──▶   energia_monitor.py    ──▶   datos_energia               app_dashboard
+Lonja Extremadura  ──▶   monitor_agrotech_v1   ──▶   precios_agricolas           _streamlit.py
+                                                      │
+                                               Vistas SQL (lógica)
+                                               v_mapa_operaciones
+                                               v_comparativa_mercados
+                                               v_salud_sectores
+                                               v_alertas_clima_extrema
+                                               v_monitor_productos
+```
 
-- energia_monitor.py: Consulta el precio de la luz en tiempo real. Es el motor detrás del ahorro en los costos de riego.
+Los scripts ETL se ejecutan **automáticamente cada mañana** via GitHub Actions (`.github/workflows/`).
 
-- monitor_agrotech_v1.py: El orquestador que sincroniza la Lonja local con el resto de los parámetros internacionales.
+---
 
-## 📚 Glosario para el Productor
-Para entender esta herramienta, usamos conceptos que ya conoces, pero con un toque tecnológico:
+## Requisitos previos
 
-- Arbitraje: Es la diferencia de precio entre dos mercados. Si el Trigo en Chicago sube pero en Extremadura se mantiene, hay una oportunidad de negociación.
+- Python 3.10+
+- Una cuenta en [Supabase](https://supabase.com) con las tablas y vistas del esquema (ver sección siguiente)
+- Claves de API de AEMET (gratuita en [opendata.aemet.es](https://opendata.aemet.es))
 
-- Proxy Market (Mercado de Referencia): Cuando un producto no cotiza en bolsa (como el Aceite de Oliva), usamos uno similar (Aceite de Soja) para entender hacia dónde va el viento del mercado.
+---
 
-- ETL (Extraer, Transformar, Limpiar): Es lo que hacen nuestros scripts: recogen datos sin procesar de la web (sucios) y los entregan limpios, listos para ser analizados.
+## Instalación y puesta en marcha
 
-- Regadío Inteligente: Decidir no regar hoy porque la luz está cara y mañana se prevée lluvia, según la estación local de referencia, es una información de valor agregado para el productor.
+### 1. Clonar el repositorio
 
-NOTA: 
-El sistema se actualiza automáticamente cada mañana.
+```bash
+git clone https://github.com/mborrillo/agro-tech-es.git
+cd agro-tech-es
+```
 
-## 🏷️ Hashtags & Referencias
-#Extremadura #SmartFarming #BigData #Agricultura40 #OpenData #Python #Supabase #PostgreSQL #AEMET #MercadoDeFuturos #LonjaExtremadura #InnovacionRural
+### 2. Instalar dependencias
+
+Para el **dashboard**:
+```bash
+pip install -r requirements.txt
+```
+
+Para los **scripts de ingesta de datos** (ETL):
+```bash
+pip install -r requirements_monitors.txt
+```
+
+> Se usan dos archivos de requirements separados porque el dashboard (Streamlit + Plotly) y los scripts ETL (requests, yfinance, schedule) tienen dependencias distintas y se despliegan en entornos diferentes.
+
+### 3. Configurar credenciales
+
+Crea el archivo `.streamlit/secrets.toml` con tus claves de Supabase:
+
+```toml
+[supabase]
+url = "https://xxxxxxxxxxxx.supabase.co"
+key = "tu_anon_key_aqui"
+```
+
+Para los scripts ETL, configura las variables de entorno (o un archivo `.env`):
+
+```
+SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+SUPABASE_KEY=tu_anon_key_aqui
+AEMET_API_KEY=tu_clave_aemet
+```
+
+**Nunca subas claves al repositorio.** El archivo `.streamlit/secrets.toml` y `.env` están en `.gitignore`.
+
+### 4. Ejecutar el dashboard
+
+```bash
+streamlit run app_dashboard_streamlit.py
+```
+
+### 5. Ejecutar los scripts ETL manualmente (opcional)
+
+```bash
+python clima_monitor.py
+python mercado_monitor.py
+python energia_monitor.py
+```
+
+---
+
+## Esquema de base de datos (Supabase/PostgreSQL)
+
+### Tablas principales
+
+| Tabla | Descripción |
+|-------|-------------|
+| `datos_clima` | Variables meteorológicas por estación y fecha (AEMET) |
+| `precios_agricolas` | Precios de cierre de la Lonja de Extremadura |
+| `mercados_internacionales` | Futuros internacionales (Chicago, NY) via Yahoo Finance |
+| `datos_energia` | Precio PVPC de la electricidad por hora (REE) |
+| `correlaciones_agro` | Mapa de correlación entre productos locales y mercados de referencia internacionales |
+
+### Vistas SQL (lógica de negocio)
+
+| Vista | Qué calcula |
+|-------|-------------|
+| `v_mapa_operaciones` | Estado de cada estación: coordenadas, clima actual, recomendaciones de riego y tratamiento |
+| `v_comparativa_mercados` | Diferencial de arbitraje: precio local vs. internacional convertido a €/kg |
+| `v_salud_sectores` | Salud de cada sector (Cereales, Aceites, Ganadería…): variación media y productos al alza/baja |
+| `v_alertas_clima_extrema` | Registros con temperaturas o condiciones fuera de rango normal |
+| `v_alertas_energia` | Franjas horarias con coste eléctrico elevado |
+| `v_monitor_productos` | Evolución histórica de productos internacionales con tendencia y variación |
+
+---
+
+## Despliegue en producción
+
+El dashboard está pensado para desplegarse en **Streamlit Community Cloud**:
+
+1. Sube el repositorio a GitHub (ya está)
+2. Ve a [share.streamlit.io](https://share.streamlit.io) y conecta el repo
+3. Añade los secrets de Supabase en la configuración de la app
+4. El archivo principal es `app_dashboard_streamlit.py`
+
+Los scripts ETL se ejecutan via **GitHub Actions** con el schedule definido en `.github/workflows/`.
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología |
+|------|-----------|
+| Frontend / Dashboard | Streamlit, Plotly, HTML/CSS embebido |
+| Base de datos | Supabase (PostgreSQL) |
+| ETL / Ingesta | Python (requests, yfinance, supabase-py) |
+| Automatización | GitHub Actions |
+| Exportación | openpyxl (Excel) |
+| Mapas | OpenStreetMap via Plotly Scattermapbox |
+
+---
+
+## Licencia
+
+MIT — libre para usar, adaptar y distribuir con atribución.
