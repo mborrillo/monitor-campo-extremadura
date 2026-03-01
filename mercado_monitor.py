@@ -1,3 +1,12 @@
+# ══════════════════════════════════════════════════════════════════
+# ARCHIVO: mercado_monitor.py
+# PROYECTO: Monitor Campo Extremadura — Ingesta de Mercados
+# PLATAFORMA: Script ETL · ejecutado via GitHub Actions
+# FUENTE: Yahoo Finance (yfinance) — futuros internacionales
+# DESTINO: Supabase → tabla mercados_internacionales
+# REPO: https://github.com/mborrillo/agro-tech-es
+# ══════════════════════════════════════════════════════════════════
+
 import yfinance as yf
 from supabase import create_client, Client
 from datetime import datetime
