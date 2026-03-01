@@ -505,6 +505,7 @@ def render_mercados():
             showgrid=False,
             color="#0d2b1a",
             tickfont=dict(color="#0d2b1a", size=11),
+            tickangle=-35,
         )
         layout_bar["yaxis"] = dict(
             gridcolor="#e8f5ee",
@@ -513,8 +514,8 @@ def render_mercados():
             title=dict(text="€/kg", font=dict(color="#0d2b1a", size=12)),
             zeroline=False,
         )
-        layout_bar["margin"] = dict(l=10, r=10, t=30, b=80)
-        fig_bar.update_layout(height=340, **layout_bar)
+        layout_bar["margin"] = dict(l=50, r=10, t=30, b=120)
+        fig_bar.update_layout(height=360, **layout_bar)
         st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
     elif df_vis.empty:
         st.info("No hay datos que coincidan con los filtros aplicados")
