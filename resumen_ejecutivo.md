@@ -1,12 +1,12 @@
-# 🌿 AgroTech ES — Resumen Ejecutivo
+# 🌿 AgroTech — Resumen Ejecutivo
 
 > **"El campo extremeño produce con esfuerzo. Nosotros le damos la información para que ese esfuerzo rinda más."**
 
 ---
 
-## Qué es AgroTech ES
+## Qué es AgroTech
 
-AgroTech ES es una plataforma digital de monitorización y análisis para el sector agrícola de Extremadura. En una sola pantalla, el productor ve el estado de sus parcelas, el precio al que cotiza su cosecha en los mercados globales, cuánto cuesta regar en este momento y si hay riesgo climático en las próximas horas.
+AgroTech es una plataforma digital de monitorización y análisis para el sector agrícola de Extremadura. En una sola pantalla, el productor ve el estado de sus parcelas, el precio al que cotiza su cosecha en los mercados globales, cuánto cuesta regar en este momento y si hay riesgo climático en las próximas horas.
 
 No es una app de previsión del tiempo. No es una hoja de cálculo de precios. Es la combinación de ambas cosas — y más — conectada a datos reales y actualizada automáticamente cada día.
 
@@ -20,7 +20,7 @@ Un agricultor de Badajoz sabe lo que vale su aceituna en la lonja local. Lo que 
 
 Esa brecha de información tiene un coste real: en márgenes de negociación perdidos, en agua y energía gastadas en el momento equivocado, en cosechas afectadas por heladas que los datos ya anticipaban.
 
-**AgroTech ES cierra esa brecha.**
+**AgroTech cierra esa brecha.**
 
 ---
 
@@ -63,7 +63,7 @@ Histórico fechado de eventos climáticos extremos por zona geográfica. Herrami
 
 La digitalización del campo ya no es una opción futura: es una ventaja competitiva presente. Las explotaciones que toman decisiones con datos tienen menores costes operativos, mejores márgenes y mayor capacidad de adaptación ante un clima cada vez más impredecible.
 
-Extremadura tiene una producción agraria de alto valor — aceite de oliva, corcho, pimentón, ganadería extensiva — pero históricamente ha competido con información limitada. AgroTech ES cambia eso, con una herramienta construida específicamente para esta región, sus cultivos y sus mercados de referencia.
+Extremadura tiene una producción agraria de alto valor — aceite de oliva, corcho, pimentón, ganadería extensiva — pero históricamente ha competido con información limitada. AgroTech cambia eso, con una herramienta construida específicamente para esta región, sus cultivos y sus mercados de referencia.
 
 ---
 
