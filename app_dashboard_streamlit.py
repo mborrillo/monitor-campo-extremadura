@@ -498,24 +498,27 @@ def render_mercados():
             hovertemplate="<b>%{x}</b><br>Diferencial: <b>%{y:+.2f} €/kg</b><extra></extra>",
         ))
         fig_bar.add_hline(y=0, line_color="#0d2b1a", line_width=1.5, opacity=0.25)
-
-        layout_bar = {**CHART_LAYOUT}
-        layout_bar["showlegend"] = False
-        layout_bar["xaxis"] = dict(
-            showgrid=False,
-            color="#0d2b1a",
-            tickfont=dict(color="#0d2b1a", size=11),
-            tickangle=-35,
+        fig_bar.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Plus Jakarta Sans", color="#0d2b1a"),
+            showlegend=False,
+            height=380,
+            margin=dict(l=50, r=20, t=30, b=120),
+            xaxis=dict(
+                showgrid=False,
+                tickfont=dict(color="#0d2b1a", size=11),
+                tickangle=-35,
+                color="#0d2b1a",
+            ),
+            yaxis=dict(
+                gridcolor="#e8f5ee",
+                tickfont=dict(color="#0d2b1a", size=11),
+                title=dict(text="€/kg", font=dict(color="#0d2b1a", size=12)),
+                color="#0d2b1a",
+                zeroline=False,
+            ),
         )
-        layout_bar["yaxis"] = dict(
-            gridcolor="#e8f5ee",
-            color="#0d2b1a",
-            tickfont=dict(color="#0d2b1a", size=11),
-            title=dict(text="€/kg", font=dict(color="#0d2b1a", size=12)),
-            zeroline=False,
-        )
-        layout_bar["margin"] = dict(l=50, r=10, t=30, b=120)
-        fig_bar.update_layout(height=360, **layout_bar)
         st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
     elif df_vis.empty:
         st.info("No hay datos que coincidan con los filtros aplicados")
