@@ -59,7 +59,7 @@ Histórico fechado de eventos climáticos extremos por zona geográfica. Herrami
 
 ---
 
-## Por qué ahora
+## Fundamentación
 
 La digitalización del campo ya no es una opción futura: es una ventaja competitiva presente. Las explotaciones que toman decisiones con datos tienen menores costes operativos, mejores márgenes y mayor capacidad de adaptación ante un clima cada vez más impredecible.
 
@@ -86,8 +86,9 @@ Construido sobre Python, Streamlit, Supabase (PostgreSQL) y GitHub Actions. Cód
 
 ---
 
-*Para consultas de colaboración, inversión o integración institucional, contactar a través del repositorio.*
-
+*Para consultas, inversión o integración institucional, contactarse via web, o wsp*
+https://marcos-borrillo.lovable.app
+Wsp: https://wa.link/vvzmot
 ---
 
 `#AgriculturaDigital` `#SmartFarming` `#Extremadura` `#AgroTech` `#Innovación` `#Sostenibilidad` `#DataDriven` `#CampoExtremeño` `#Cooperativas` `#AgTech` `#OpenData` `#Python` `#Supabase` `#AEMET` `#MercadoAgrícola` `#EficienciaEnergética` `#DigitalizaciónRural` `#StartupAgraria`
