@@ -1,3 +1,4 @@
+# Para el proyecto https://agro-tech-extremadura.lovable.app/, se utiliza este requirements_monitors.txt puntualmente 
 # --- Captura de Datos (GitHub Actions) ---
 supabase>=2.11.0
 python-dotenv==1.0.0
