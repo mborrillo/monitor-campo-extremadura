@@ -1,3 +1,12 @@
+# ══════════════════════════════════════════════════════════════════
+# ARCHIVO: clima_monitor.py
+# PROYECTO: Monitor Campo Extremadura — Ingesta de Datos Climáticos
+# PLATAFORMA: Script ETL · ejecutado via GitHub Actions
+# FUENTE: API AEMET (opendata.aemet.es)
+# DESTINO: Supabase → tabla datos_clima
+# REPO: https://github.com/mborrillo/agro-tech-es
+# ══════════════════════════════════════════════════════════════════
+
 import os
 import requests
 from supabase import create_client, Client
