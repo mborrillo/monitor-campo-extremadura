@@ -6,7 +6,7 @@
 
 ## Qué es AgroTech
 
-AgroTech es una plataforma digital de monitorización y análisis para el sector agrícola de Extremadura. En una sola pantalla, el productor ve el estado de sus parcelas, el precio al que cotiza su cosecha en los mercados globales, cuánto cuesta regar en este momento y si hay riesgo climático en las próximas horas.
+AgroTech es una plataforma digital de monitorización y análisis para el sector agrícola de España, y Extremadura en particular. En una sola pantalla, el productor ve el estado de sus parcelas, el precio al que cotiza su cosecha en los mercados globales, cuánto cuesta regar en este momento y si hay riesgo climático en las próximas horas.
 
 No es una app de previsión del tiempo. No es una hoja de cálculo de precios. Es la combinación de ambas cosas — y más — conectada a datos reales y actualizada automáticamente cada día.
 
@@ -63,7 +63,7 @@ Histórico fechado de eventos climáticos extremos por zona geográfica. Herrami
 
 La digitalización del campo ya no es una opción futura: es una ventaja competitiva presente. Las explotaciones que toman decisiones con datos tienen menores costes operativos, mejores márgenes y mayor capacidad de adaptación ante un clima cada vez más impredecible.
 
-Extremadura tiene una producción agraria de alto valor — aceite de oliva, corcho, pimentón, ganadería extensiva — pero históricamente ha competido con información limitada. AgroTech cambia eso, con una herramienta construida específicamente para esta región, sus cultivos y sus mercados de referencia.
+Extremadura tiene una producción agraria de alto valor — aceite de oliva, corcho, pimentón, ganadería extensiva — pero históricamente ha competido con información limitada. Esta herramienta cambia eso, ya que fue construida específicamente para esta región (y otras con necesidades similares),para potenciar sus cultivos y sus mercados agricolas.
 
 ---
 
@@ -71,9 +71,9 @@ Extremadura tiene una producción agraria de alto valor — aceite de oliva, cor
 
 - ✅ Dashboard operativo con datos reales de Supabase
 - ✅ Ingesta automática diaria: clima (AEMET), mercados (Yahoo Finance), energía (REE)
-- ✅ Seis secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Alertas, Configuración
+- ✅ Secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Alertas
 - ✅ Exportación de datos a Excel
-- 🔄 En desarrollo: frontend complementario en [agro-tech-es.lovable.app](https://agro-tech-es.lovable.app)
+- 🔄 En desarrollo: frontend complementario para moviles: [agro-tech-es.lovable.app](https://agro-tech-es.lovable.app)
 - 🔄 Próximo: autenticación por roles, notificaciones push, API abierta para terceros
 
 ---
