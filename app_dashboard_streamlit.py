@@ -485,64 +485,53 @@ def render_mercados():
     section_header("📊", "Diferencial de Arbitraje (€/kg)", "Verde: precio local superior · Rojo: precio local inferior al internacional")
 
     if not df_vis.empty and "diferencial_arbitraje" in df_vis.columns:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-        import matplotlib.patches as mpatches
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as mpatches
 
-        df_chart = df_vis.sort_values("producto").copy()
-        df_chart["diferencial_arbitraje"] = pd.to_numeric(df_chart["diferencial_arbitraje"], errors="coerce").fillna(0)
+            df_chart = df_vis.sort_values("producto").copy()
+            df_chart["diferencial_arbitraje"] = pd.to_numeric(df_chart["diferencial_arbitraje"], errors="coerce").fillna(0)
+            productos = df_chart["producto"].tolist()
+            valores   = df_chart["diferencial_arbitraje"].tolist()
+            colores   = ["#27a05e" if v >= 0 else "#ef4444" for v in valores]
+            n = len(productos)
 
-        productos = df_chart["producto"].tolist()
-        valores   = df_chart["diferencial_arbitraje"].tolist()
-        colores   = ["#27a05e" if v >= 0 else "#ef4444" for v in valores]
-        n = len(productos)
+            fig, ax = plt.subplots(figsize=(max(8, n * 1.1), 4.5))
+            fig.patch.set_facecolor("#f0faf4")
+            ax.set_facecolor("#f0faf4")
 
-        fig, ax = plt.subplots(figsize=(max(8, n * 1.1), 4.5))
-        fig.patch.set_facecolor("#f0faf4")
-        ax.set_facecolor("#f0faf4")
+            bars = ax.bar(range(n), valores, color=colores, alpha=0.88, width=0.6, zorder=3)
+            ax.axhline(0, color="#0d2b1a", linewidth=1.2, alpha=0.3, zorder=2)
 
-        bars = ax.bar(range(n), valores, color=colores, alpha=0.88, width=0.6, zorder=3)
+            for bar, val in zip(bars, valores):
+                va     = "bottom" if val >= 0 else "top"
+                offset = max(abs(val) * 0.03, 0.05) * (1 if val >= 0 else -1)
+                ax.text(bar.get_x() + bar.get_width() / 2, val + offset,
+                        f"{val:+.2f}", ha="center", va=va,
+                        fontsize=8.5, fontweight="600", color="#0d2b1a")
 
-        # Línea de cero
-        ax.axhline(0, color="#0d2b1a", linewidth=1.2, alpha=0.3, zorder=2)
+            ax.set_xticks(range(n))
+            ax.set_xticklabels(productos, rotation=30, ha="right", fontsize=10, color="#0d2b1a")
+            ax.set_ylabel("€/kg", fontsize=10, color="#0d2b1a")
+            ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
+            ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
+            ax.set_axisbelow(True)
+            for spine in ["top", "right"]:
+                ax.spines[spine].set_visible(False)
+            for spine in ["left", "bottom"]:
+                ax.spines[spine].set_color("#d1ead9")
 
-        # Etiquetas de valor encima/debajo de cada barra
-        for i, (bar, val) in enumerate(zip(bars, valores)):
-            va  = "bottom" if val >= 0 else "top"
-            offset = 0.05 if val >= 0 else -0.05
-            ax.text(bar.get_x() + bar.get_width() / 2, val + offset,
-                    f"{val:+.2f}", ha="center", va=va,
-                    fontsize=8.5, fontweight="600",
-                    color="#0d2b1a")
-
-        # Eje X: nombres de producto
-        ax.set_xticks(range(n))
-        ax.set_xticklabels(productos, rotation=30, ha="right", fontsize=10, color="#0d2b1a")
-
-        # Eje Y
-        ax.set_ylabel("€/kg", fontsize=10, color="#0d2b1a")
-        ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
-
-        # Grid horizontal suave
-        ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
-        ax.set_axisbelow(True)
-
-        # Quitar bordes innecesarios
-        for spine in ["top", "right"]:
-            ax.spines[spine].set_visible(False)
-        for spine in ["left", "bottom"]:
-            ax.spines[spine].set_color("#d1ead9")
-
-        # Leyenda
-        patch_pos = mpatches.Patch(color="#27a05e", alpha=0.88, label="Precio local superior")
-        patch_neg = mpatches.Patch(color="#ef4444", alpha=0.88, label="Precio local inferior")
-        ax.legend(handles=[patch_pos, patch_neg], loc="upper right",
-                  fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
-
-        plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
-        plt.close(fig)
+            patch_pos = mpatches.Patch(color="#27a05e", alpha=0.88, label="Precio local superior")
+            patch_neg = mpatches.Patch(color="#ef4444", alpha=0.88, label="Precio local inferior")
+            ax.legend(handles=[patch_pos, patch_neg], loc="upper right",
+                      fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
+            plt.tight_layout()
+            st.pyplot(fig, use_container_width=True)
+            plt.close(fig)
+        except Exception as e_chart:
+            st.warning(f"⚠️ Error al renderizar gráfico de diferencial: {e_chart}")
     elif df_vis.empty:
         st.info("No hay datos que coincidan con los filtros aplicados")
 
@@ -649,62 +638,56 @@ def render_monitor_productos():
 
     section_header("📈", "Tendencia de Precios por Categoría", "Evolución del precio de cierre — más antiguo a la izquierda, más reciente a la derecha")
     if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns and "categoria" in df_f.columns:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-        import matplotlib.dates as mdates
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            import matplotlib.dates as mdates
 
-        df_chart = df_f.copy()
-        df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
-        df_chart["fecha"] = pd.to_datetime(df_chart["fecha"])
-        df_chart = df_chart.dropna(subset=["precio_cierre", "fecha"])
-        df_grouped = (
-            df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
-            .mean().reset_index().sort_values("fecha")
-        )
-        categorias = sorted(df_grouped["categoria"].dropna().unique().tolist())
-        palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
+            df_chart = df_f.copy()
+            df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
+            df_chart["fecha"] = pd.to_datetime(df_chart["fecha"])
+            df_chart = df_chart.dropna(subset=["precio_cierre", "fecha"])
+            df_grouped = (
+                df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
+                .mean().reset_index().sort_values("fecha")
+            )
+            categorias = sorted(df_grouped["categoria"].dropna().unique().tolist())
+            palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
 
-        fig, ax = plt.subplots(figsize=(11, 4.5))
-        fig.patch.set_facecolor("#f0faf4")
-        ax.set_facecolor("#f0faf4")
+            fig, ax = plt.subplots(figsize=(11, 4.5))
+            fig.patch.set_facecolor("#f0faf4")
+            ax.set_facecolor("#f0faf4")
 
-        for i, cat in enumerate(categorias):
-            sub = df_grouped[df_grouped["categoria"] == cat].sort_values("fecha")
-            if sub.empty:
-                continue
-            color = palette[i % len(palette)]
-            ax.plot(sub["fecha"], sub["precio_cierre"],
-                    color=color, linewidth=2.2, marker="o", markersize=4,
-                    label=str(cat), zorder=3)
+            for i, cat in enumerate(categorias):
+                sub = df_grouped[df_grouped["categoria"] == cat].sort_values("fecha")
+                if sub.empty:
+                    continue
+                color = palette[i % len(palette)]
+                ax.plot(sub["fecha"], sub["precio_cierre"],
+                        color=color, linewidth=2.2, marker="o", markersize=4,
+                        label=str(cat), zorder=3)
 
-        # Eje X: fechas de izquierda (antigua) a derecha (reciente)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y"))
-        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.xticks(rotation=30, ha="right", fontsize=9, color="#0d2b1a")
-
-        # Eje Y
-        ax.set_ylabel("Precio cierre", fontsize=10, color="#0d2b1a")
-        ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
-
-        # Grid
-        ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
-        ax.xaxis.grid(True, color="#d1ead9", linewidth=0.5, linestyle="--", zorder=0)
-        ax.set_axisbelow(True)
-
-        # Bordes
-        for spine in ["top", "right"]:
-            ax.spines[spine].set_visible(False)
-        for spine in ["left", "bottom"]:
-            ax.spines[spine].set_color("#d1ead9")
-
-        # Leyenda horizontal arriba
-        ax.legend(loc="upper left", bbox_to_anchor=(0, 1.13), ncol=len(categorias),
-                  fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
-
-        plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
-        plt.close(fig)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y"))
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            plt.xticks(rotation=30, ha="right", fontsize=9, color="#0d2b1a")
+            ax.set_ylabel("Precio cierre", fontsize=10, color="#0d2b1a")
+            ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
+            ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
+            ax.xaxis.grid(True, color="#d1ead9", linewidth=0.5, linestyle="--", zorder=0)
+            ax.set_axisbelow(True)
+            for spine in ["top", "right"]:
+                ax.spines[spine].set_visible(False)
+            for spine in ["left", "bottom"]:
+                ax.spines[spine].set_color("#d1ead9")
+            ax.legend(loc="upper left", bbox_to_anchor=(0, 1.13),
+                      ncol=max(1, len(categorias)),
+                      fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
+            plt.tight_layout()
+            st.pyplot(fig, use_container_width=True)
+            plt.close(fig)
+        except Exception as e_chart:
+            st.warning(f"⚠️ Error al renderizar gráfico de tendencia: {e_chart}")
     elif df_f.empty:
         st.info("No hay datos que coincidan con los filtros aplicados")
     else:
