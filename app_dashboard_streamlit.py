@@ -483,49 +483,66 @@ def render_mercados():
 
     # ── Gráfico diferencial de arbitraje: una barra vertical por producto ──
     section_header("📊", "Diferencial de Arbitraje (€/kg)", "Verde: precio local superior · Rojo: precio local inferior al internacional")
-    
+
     if not df_vis.empty and "diferencial_arbitraje" in df_vis.columns:
-        # Preparar datos
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as mpatches
+
         df_chart = df_vis.sort_values("producto").copy()
         df_chart["diferencial_arbitraje"] = pd.to_numeric(df_chart["diferencial_arbitraje"], errors="coerce").fillna(0)
-    
-        # Asignar colores según signo
-        colores = df_chart["diferencial_arbitraje"].apply(lambda v: "#27a05e" if v >= 0 else "#ef4444").tolist()
-    
-        # Crear figura
-        fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(
-            x=df_chart["producto"],
-            y=df_chart["diferencial_arbitraje"],
-            marker_color=colores,
-            opacity=0.9,
-            hovertemplate="<b>%{x}</b><br>Diferencial: <b>%{y:+.2f} €/kg</b><extra></extra>",
-        ))
-        fig_bar.add_hline(y=0, line_color="#0d2b1a", line_width=1.5, opacity=0.25)
-    
-        # Ajustes de diseño
-        fig_bar.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Plus Jakarta Sans", color="#0d2b1a"),
-            showlegend=False,
-            height=380,
-            margin=dict(l=50, r=20, t=30, b=120),
-            xaxis=dict(
-                showgrid=False,
-                tickfont=dict(color="#0d2b1a", size=11),
-                tickangle=-35,
-                color="#0d2b1a",
-            ),
-            yaxis=dict(
-                gridcolor="#e8f5ee",
-                tickfont=dict(color="#0d2b1a", size=11),
-                title=dict(text="€/kg", font=dict(color="#0d2b1a", size=12)),
-                color="#0d2b1a",
-                zeroline=False,
-            ),
-        )
-        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
+
+        productos = df_chart["producto"].tolist()
+        valores   = df_chart["diferencial_arbitraje"].tolist()
+        colores   = ["#27a05e" if v >= 0 else "#ef4444" for v in valores]
+        n = len(productos)
+
+        fig, ax = plt.subplots(figsize=(max(8, n * 1.1), 4.5))
+        fig.patch.set_facecolor("#f0faf4")
+        ax.set_facecolor("#f0faf4")
+
+        bars = ax.bar(range(n), valores, color=colores, alpha=0.88, width=0.6, zorder=3)
+
+        # Línea de cero
+        ax.axhline(0, color="#0d2b1a", linewidth=1.2, alpha=0.3, zorder=2)
+
+        # Etiquetas de valor encima/debajo de cada barra
+        for i, (bar, val) in enumerate(zip(bars, valores)):
+            va  = "bottom" if val >= 0 else "top"
+            offset = 0.05 if val >= 0 else -0.05
+            ax.text(bar.get_x() + bar.get_width() / 2, val + offset,
+                    f"{val:+.2f}", ha="center", va=va,
+                    fontsize=8.5, fontweight="600",
+                    color="#0d2b1a")
+
+        # Eje X: nombres de producto
+        ax.set_xticks(range(n))
+        ax.set_xticklabels(productos, rotation=30, ha="right", fontsize=10, color="#0d2b1a")
+
+        # Eje Y
+        ax.set_ylabel("€/kg", fontsize=10, color="#0d2b1a")
+        ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
+
+        # Grid horizontal suave
+        ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
+        ax.set_axisbelow(True)
+
+        # Quitar bordes innecesarios
+        for spine in ["top", "right"]:
+            ax.spines[spine].set_visible(False)
+        for spine in ["left", "bottom"]:
+            ax.spines[spine].set_color("#d1ead9")
+
+        # Leyenda
+        patch_pos = mpatches.Patch(color="#27a05e", alpha=0.88, label="Precio local superior")
+        patch_neg = mpatches.Patch(color="#ef4444", alpha=0.88, label="Precio local inferior")
+        ax.legend(handles=[patch_pos, patch_neg], loc="upper right",
+                  fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
+
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
     elif df_vis.empty:
         st.info("No hay datos que coincidan con los filtros aplicados")
 
@@ -630,66 +647,68 @@ def render_monitor_productos():
     if buscar_prod and "producto" in df_f.columns:
         df_f = df_f[df_f["producto"].str.contains(buscar_prod, case=False, na=False)]
 
-section_header("📊", "Variación diaria de precios por categoría", "Barras verdes: subida · rojas: bajada (respecto al día anterior)")
+    section_header("📈", "Tendencia de Precios por Categoría", "Evolución del precio de cierre — más antiguo a la izquierda, más reciente a la derecha")
+    if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns and "categoria" in df_f.columns:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
 
-if not df_f.empty and "fecha" in df_f.columns and "precio_cierre" in df_f.columns and "categoria" in df_f.columns:
-    # Preparar datos
-    df_chart = df_f.copy()
-    df_chart["fecha"] = pd.to_datetime(df_chart["fecha"])
-    df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
-    df_chart = df_chart.dropna(subset=["precio_cierre", "fecha", "categoria"]).sort_values(["categoria", "fecha"])
-
-    # Calcular variación diaria por categoría
-    df_chart["variacion"] = df_chart.groupby("categoria")["precio_cierre"].diff().fillna(0)
-
-    # Tomar el último valor de variación para cada categoría (o se puede mostrar toda la serie)
-    # Para mantener la idea de "columnas", usamos la variación más reciente
-    df_last = df_chart.groupby("categoria").last().reset_index()
-    df_last = df_last[df_last["variacion"] != 0]  # opcional: eliminar categorías sin cambio
-
-    if not df_last.empty:
-        # Ordenar por categoría para visualización limpia
-        df_last = df_last.sort_values("categoria")
-
-        # Asignar colores
-        colores = df_last["variacion"].apply(lambda v: "#27a05e" if v > 0 else "#ef4444" if v < 0 else "#d3d3d3").tolist()
-
-        fig_var = go.Figure()
-        fig_var.add_trace(go.Bar(
-            x=df_last["categoria"],
-            y=df_last["variacion"],
-            marker_color=colores,
-            opacity=0.9,
-            hovertemplate="<b>%{x}</b><br>Variación: <b>%{y:+.4f}</b><extra></extra>",
-        ))
-        fig_var.add_hline(y=0, line_color="#0d2b1a", line_width=1.5, opacity=0.25)
-
-        fig_var.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Plus Jakarta Sans", color="#0d2b1a"),
-            showlegend=False,
-            height=380,
-            margin=dict(l=50, r=20, t=30, b=120),
-            xaxis=dict(
-                showgrid=False,
-                tickfont=dict(color="#0d2b1a", size=11),
-                tickangle=-35,
-                color="#0d2b1a",
-            ),
-            yaxis=dict(
-                gridcolor="#e8f5ee",
-                tickfont=dict(color="#0d2b1a", size=11),
-                title=dict(text="Variación precio", font=dict(color="#0d2b1a", size=12)),
-                color="#0d2b1a",
-                zeroline=False,
-            ),
+        df_chart = df_f.copy()
+        df_chart["precio_cierre"] = pd.to_numeric(df_chart["precio_cierre"], errors="coerce")
+        df_chart["fecha"] = pd.to_datetime(df_chart["fecha"])
+        df_chart = df_chart.dropna(subset=["precio_cierre", "fecha"])
+        df_grouped = (
+            df_chart.groupby(["fecha", "categoria"])["precio_cierre"]
+            .mean().reset_index().sort_values("fecha")
         )
-        st.plotly_chart(fig_var, use_container_width=True, config={"displayModeBar": False})
+        categorias = sorted(df_grouped["categoria"].dropna().unique().tolist())
+        palette = ["#27a05e", "#f59e0b", "#3b82f6", "#ef4444", "#8b5e34", "#a855f7", "#0ea5e9", "#f97316"]
+
+        fig, ax = plt.subplots(figsize=(11, 4.5))
+        fig.patch.set_facecolor("#f0faf4")
+        ax.set_facecolor("#f0faf4")
+
+        for i, cat in enumerate(categorias):
+            sub = df_grouped[df_grouped["categoria"] == cat].sort_values("fecha")
+            if sub.empty:
+                continue
+            color = palette[i % len(palette)]
+            ax.plot(sub["fecha"], sub["precio_cierre"],
+                    color=color, linewidth=2.2, marker="o", markersize=4,
+                    label=str(cat), zorder=3)
+
+        # Eje X: fechas de izquierda (antigua) a derecha (reciente)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y"))
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        plt.xticks(rotation=30, ha="right", fontsize=9, color="#0d2b1a")
+
+        # Eje Y
+        ax.set_ylabel("Precio cierre", fontsize=10, color="#0d2b1a")
+        ax.tick_params(axis="y", colors="#0d2b1a", labelsize=9)
+
+        # Grid
+        ax.yaxis.grid(True, color="#d1ead9", linewidth=0.8, zorder=0)
+        ax.xaxis.grid(True, color="#d1ead9", linewidth=0.5, linestyle="--", zorder=0)
+        ax.set_axisbelow(True)
+
+        # Bordes
+        for spine in ["top", "right"]:
+            ax.spines[spine].set_visible(False)
+        for spine in ["left", "bottom"]:
+            ax.spines[spine].set_color("#d1ead9")
+
+        # Leyenda horizontal arriba
+        ax.legend(loc="upper left", bbox_to_anchor=(0, 1.13), ncol=len(categorias),
+                  fontsize=9, framealpha=0.85, edgecolor="#d1ead9")
+
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
+    elif df_f.empty:
+        st.info("No hay datos que coincidan con los filtros aplicados")
     else:
-        st.info("No hay suficientes datos para calcular variaciones (posiblemente solo un punto por categoría).")
-else:
-    st.info("Datos insuficientes para el gráfico de variación.")
+        st.info("Sin datos suficientes para el gráfico de tendencia")
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     fecha_header = ultimo_prod.strftime("%Y-%m-%d") if ultimo_prod is not None else "—"
