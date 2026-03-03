@@ -622,25 +622,36 @@ def render_monitor_productos():
     page_hero("🌐 Mercados Internacionales", "Monitor de Productos", "Seguimiento de precios internacionales por categoría")
     df = load("v_monitor_productos", order_col="fecha", limit=500)
 
-    f1, f2, f3 = st.columns([1, 1, 2])
+    # Preparar fechas
+    if not df.empty and "fecha" in df.columns:
+        df["fecha"] = pd.to_datetime(df["fecha"])
+
+    f1, f2, f3, f4 = st.columns([1, 1, 1, 1.5])
     with f1:
+        # Año-Mes — multiselect formato YYYY-MM, orden descendente
+        anio_mes_opts = []
+        if not df.empty and "fecha" in df.columns:
+            anio_mes_opts = sorted(
+                df["fecha"].dropna().apply(lambda d: d.strftime("%Y-%m")).unique().tolist(),
+                reverse=True
+            )
+        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los periodos...")
+    with f2:
         cat_opts = ["Todas"]
         if not df.empty and "categoria" in df.columns:
             cat_opts += sorted(df["categoria"].dropna().unique().tolist())
         filtro_cat = st.selectbox("Categoría", cat_opts)
-    with f2:
+    with f3:
         tend_opts = ["Todas"]
         if not df.empty and "tendencia" in df.columns:
             tend_opts += sorted(df["tendencia"].dropna().unique().tolist())
         filtro_tend = st.selectbox("Tendencia", tend_opts)
-    with f3:
+    with f4:
         buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
 
     ultimo_prod = None; n_productos_int = n_alza = n_baja = 0
     if not df.empty:
-        if "fecha" in df.columns:
-            df["fecha"] = pd.to_datetime(df["fecha"])
-            ultimo_prod = df["fecha"].max()
+        ultimo_prod = df["fecha"].max() if "fecha" in df.columns else None
         if "producto" in df.columns:
             n_productos_int = df["producto"].nunique()
         if "tendencia" in df.columns:
@@ -656,6 +667,10 @@ def render_monitor_productos():
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
     df_f = df.copy()
+    # Filtro Año-Mes
+    if filtro_periodo and "fecha" in df_f.columns:
+        mask = df_f["fecha"].apply(lambda d: d.strftime("%Y-%m")).isin(filtro_periodo)
+        df_f = df_f[mask]
     if filtro_cat != "Todas" and "categoria" in df_f.columns:
         df_f = df_f[df_f["categoria"] == filtro_cat]
     if filtro_tend != "Todas" and "tendencia" in df_f.columns:
