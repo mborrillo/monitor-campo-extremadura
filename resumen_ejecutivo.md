@@ -69,8 +69,6 @@ Extremadura tiene una producción agraria de alto valor — aceite de oliva, cor
 
 ## Vistas SQL del Modelo
 
----
-
 ## 1. Vista: `v_mapa_operaciones` — El Cerebro Operativo
 
 **Objetivo:** Decidir cuándo actuar para no tirar el dinero.
@@ -85,8 +83,6 @@ Extremadura tiene una producción agraria de alto valor — aceite de oliva, cor
 
 - **Energía (> 0.15 €/kWh):** Hemos fijado este umbral porque, en los regadíos de Extremadura, bombear agua por encima de este precio suele comerse más del 40% del margen neto de la campaña.
 
----
-
 ## 2. Vista: `v_alertas_energia` — El Vigía de Costes
 
 **Objetivo:** Traducir un número abstracto (€/kWh) en una acción empresarial (Alto/Medio/Bajo).
@@ -95,8 +91,6 @@ Extremadura tiene una producción agraria de alto valor — aceite de oliva, cor
 
 **Por qué estos umbrales:** Usamos la consistencia. Si el Mapa dice que es caro regar a 0.15 €, la Alerta debe decir lo mismo. El éxito de la herramienta es que el sistema no se contradiga.
 
----
-
 ## 3. Vista: `v_comparativa_mercados` — El Escudo Comercial
 
 **Objetivo:** Darle al agricultor "poder de negociación".
@@ -104,8 +98,6 @@ Extremadura tiene una producción agraria de alto valor — aceite de oliva, cor
 **Fundamento:** El concepto de Arbitraje. Si el precio en la Lonja de Extremadura está a 0.20 € pero en el mercado internacional (Chicago/París) está subiendo a 0.25 €, el agricultor sabe que no debe vender todavía.
 
 **Umbrales:** Aquí el umbral es el **Diferencial**. Visualizar barras rojas (precio local por debajo del internacional) alerta al usuario de que está perdiendo dinero por una mala comercialización, no por una mala cosecha.
-
----
 
 ## 4. Vista: `v_salud_sectores` — El Termómetro del Mercado
 
