@@ -221,7 +221,7 @@ def render_sidebar():
             "📊  Monitor de Mercados",
             "🌐  Monitor de Productos",
             "🔔  Alertas",
-            # "⚙️  Configuración",  # DESHABILITADO TEMPORALMENTE — reactivar cuando sea necesario
+            "⚙️  Configuración",
         ]
         default_idx = 0
         if "nav_target" in st.session_state:
@@ -348,21 +348,28 @@ def render_mapa():
         st.warning("Sin datos de localización en v_mapa_operaciones")
         return
 
-    f1, f2, f3 = st.columns([1, 1, 2])
+    f1, f2, f3, f4 = st.columns([1, 1, 1, 2])
     with f1:
+        comarca_opts = ["Todas"]
+        if "comarca" in df.columns:
+            comarca_opts += sorted(df["comarca"].dropna().unique().tolist())
+        filtro_comarca = st.selectbox("Comarca", comarca_opts)
+    with f2:
         tratamiento_opts = ["Todos"]
         if "recomendacion_tratamiento" in df.columns:
             tratamiento_opts += sorted(df["recomendacion_tratamiento"].dropna().unique().tolist())
         filtro_trat = st.selectbox("Tratamiento", tratamiento_opts)
-    with f2:
+    with f3:
         riego_opts = ["Todos"]
         if "recomendacion_riego" in df.columns:
             riego_opts += sorted(df["recomendacion_riego"].dropna().unique().tolist())
         filtro_riego = st.selectbox("Riego", riego_opts)
-    with f3:
+    with f4:
         buscar = st.text_input("🔍 Buscar estación", placeholder="Nombre de estación...")
 
     df_filtered = df.copy()
+    if filtro_comarca != "Todas" and "comarca" in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered["comarca"] == filtro_comarca]
     if filtro_trat != "Todos" and "recomendacion_tratamiento" in df_filtered.columns:
         df_filtered = df_filtered[df_filtered["recomendacion_tratamiento"] == filtro_trat]
     if filtro_riego != "Todos" and "recomendacion_riego" in df_filtered.columns:
@@ -580,44 +587,13 @@ def render_mercados():
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     fecha_str_header = ultimo.strftime('%Y-%m-%d') if ultimo is not None else '—'
-
-    # ── Cabecera: icono + título + botón Excel ──
-    if not df_vis.empty:
-        import io as _io
-        _output = _io.BytesIO()
-        _cols_export = ["fecha", "producto", "relacion", "precio_local_kg", "precio_internacional_kg", "diferencial_arbitraje"]
-        _cols_export = [c for c in _cols_export if c in df_vis.columns]
-        _df_export = df_vis[_cols_export].copy()
-        if "fecha" in _df_export.columns:
-            _df_export["fecha"] = _df_export["fecha"].apply(lambda d: d.strftime("%d/%m/%Y") if hasattr(d, "strftime") else str(d))
-        with pd.ExcelWriter(_output, engine="openpyxl") as _writer:
-            _df_export.to_excel(_writer, index=False, sheet_name="Precios")
-        _excel_data = _output.getvalue()
-    else:
-        _excel_data = None
-
-    hdr_m = st.columns([0.05, 0.78, 0.17])
-    with hdr_m[0]:
-        st.markdown('<div style="width:40px;height:40px;background:linear-gradient(135deg,#27a05e,#3dbd76);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(39,160,94,0.3);margin-top:2px;">🗓️</div>', unsafe_allow_html=True)
-    with hdr_m[1]:
-        st.markdown(f'<div style="padding-top:4px;"><p style="font-size:1.25rem;font-weight:700;color:#0d2b1a;margin:0;">Precios del Día</p><p style="font-size:0.8rem;color:#7aa98e;margin:0;">Última actualización: {fecha_str_header}</p></div>', unsafe_allow_html=True)
-    with hdr_m[2]:
-        if _excel_data:
-            st.download_button(
-                label="📥 Excel",
-                data=_excel_data,
-                file_name=f"precios_dia_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-            )
-    st.markdown("<div style='border-bottom:2px solid #d1ead9;margin-bottom:12px;'></div>", unsafe_allow_html=True)
+    section_header("🗓️", "Precios del Día", f"Última actualización: {fecha_str_header}")
 
     if not df_vis.empty:
         st.markdown("""
-        <div style="display:grid;grid-template-columns:1.2fr 2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
+        <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
                     padding:10px 20px;background:#f0faf4;border-radius:10px 10px 0 0;
                     border:1px solid var(--border);border-bottom:2px solid var(--border);margin-bottom:2px;">
-            <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Fecha</span>
             <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Producto</span>
             <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Local (€/kg)</span>
             <span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">Internacional (€/kg)</span>
@@ -633,10 +609,6 @@ def render_mercados():
             sign  = "+" if dif > 0 else ""
             b_bg  = "#dcfce7" if dif > 0 else "#fee2e2"
             b_col = "#15803d" if dif > 0 else "#b91c1c"
-            try:
-                fecha_row = pd.to_datetime(row.get("fecha", "")).strftime("%d/%m/%Y")
-            except Exception:
-                fecha_row = str(row.get("fecha", "—"))
             if dif > 0:
                 tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
             elif dif < 0:
@@ -644,10 +616,9 @@ def render_mercados():
             else:
                 tend_svg = """<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,8 20,8" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
             st.markdown(f"""
-            <div style="display:grid;grid-template-columns:1.2fr 2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
+            <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
                         align-items:center;padding:14px 20px;background:white;
                         border:1px solid var(--border);border-top:none;margin-bottom:0;">
-                <span style="font-family:'DM Mono',monospace;font-size:0.8rem;color:#7aa98e;">{fecha_row}</span>
                 <span style="font-weight:600;font-size:0.9rem;color:#0d2b1a;">{row.get('producto','—')}</span>
                 <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#1a5c38;">{local:.2f} €/kg</span>
                 <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#475569;">{intl:.2f} €/kg</span>
@@ -969,72 +940,67 @@ def render_alertas():
         else:
             st.info("Sin alertas de energía disponibles")
 
-# =============================================================================
-# SECCIÓN CONFIGURACIÓN — DESHABILITADA TEMPORALMENTE
-# Para reactivar: descomentar esta función, la opción del menú en render_sidebar()
-# y la línea elif en main().
-# =============================================================================
-# def render_configuracion():
-#     page_hero("⚙️ Ajustes", "Configuración del Sistema", "Secrets de Supabase, AEMET y diagnóstico de conexiones")
-#     col1, col2 = st.columns(2)
-#
-#     with col1:
-#         section_header("🔐", "Estado de conexiones", "Verificación en tiempo real")
-#         try:
-#             sb = get_supabase()
-#             sb.table("datos_clima").select("id").limit(1).execute()
-#             st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ Supabase conectado</div><div class="alert-desc">Lectura de tablas OK</div></div></div>""", unsafe_allow_html=True)
-#         except Exception as e:
-#             st.markdown(f"""<div class="alert-item alert-critical"><div class="alert-dot dot-red"></div><div><div class="alert-title">❌ Supabase no conectado</div><div class="alert-desc">{str(e)[:120]}</div></div></div>""", unsafe_allow_html=True)
-#         try:
-#             ak = st.secrets["AEMET_KEY"]
-#             st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ AEMET configurado</div><div class="alert-desc">API key presente en secrets</div></div></div>""", unsafe_allow_html=True)
-#         except Exception:
-#             st.markdown("""<div class="alert-item alert-warning"><div class="alert-dot dot-amber"></div><div><div class="alert-title">⚠️ AEMET no configurado</div><div class="alert-desc">Añade AEMET_KEY en Streamlit Secrets</div></div></div>""", unsafe_allow_html=True)
-#
-#         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-#         section_header("📖", "Cómo configurar secrets", "")
-#         st.markdown("""<div style="background:#f0faf4;border:1px solid #d1ead9;border-radius:12px;padding:16px 20px;font-size:0.82rem;color:#1a5c38;line-height:1.9;"><b>1.</b> En Streamlit Cloud → tu app → <b>Settings → Secrets</b><br><b>2.</b> Pega el siguiente bloque (reemplaza las claves):</div>""", unsafe_allow_html=True)
-#         st.code('SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"\nSUPABASE_KEY = "tu_clave_supabase"\nAEMET_KEY    = "tu_clave_aemet"', language="toml")
-#         st.warning("⚠️ Nunca pongas las claves directamente en el código Python.")
-#
-#     with col2:
-#         section_header("📊", "Tablas y vistas disponibles", "Estado de cada fuente de datos")
-#         tablas = [
-#             ("datos_clima",             "🌤️", "Meteorología histórica",     "13 cols"),
-#             ("datos_energia",           "⚡", "Precios energía eléctrica",  "7 cols"),
-#             ("precios_agricolas",       "🌾", "Precios lonja",              "14 cols"),
-#             ("mercados_internacionales","🌍", "Mercados internacionales",   "9 cols"),
-#             ("mapeo_productos",         "🗂️", "Catálogo productos",        "4 cols"),
-#             ("v_mapa_operaciones",      "📍", "Vista mapa estaciones",      "12 cols"),
-#             ("v_salud_sectores",        "💚", "Vista salud sectores",       "6 cols"),
-#             ("v_alertas_clima_extrema", "🌩️", "Vista alertas clima",       "5 cols"),
-#             ("v_alertas_energia",       "⚡", "Vista alertas energía",      "6 cols"),
-#             ("v_comparativa_mercados",  "📊", "Vista comparativa",          "6 cols"),
-#         ]
-#         sb = get_supabase()
-#         for tabla, icon, desc, cols_info in tablas:
-#             n, color = "—", "#ef4444"
-#             if sb:
-#                 try:
-#                     r = sb.table(tabla).select("*", count="exact").limit(1).execute()
-#                     n = str(r.count) if r.count is not None else "✓"; color = "#27a05e"
-#                 except:
-#                     n, color = "err", "#f59e0b"
-#             st.markdown(f"""
-#             <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
-#                 <span>{icon}</span>
-#                 <div style="flex:1;">
-#                     <div style="font-weight:600;font-size:0.82rem;color:#0d2b1a;font-family:'DM Mono',monospace;">{tabla}</div>
-#                     <div style="font-size:0.72rem;color:#7aa98e;">{desc} · {cols_info}</div>
-#                 </div>
-#                 <span style="font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:700;color:{color};">{n}</span>
-#             </div>
-#             """, unsafe_allow_html=True)
-#         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-#         if st.button("🔄 Limpiar caché y reconectar", use_container_width=True):
-#             st.cache_data.clear(); st.cache_resource.clear()
-#             st.success("Caché limpiada. Reconectando..."); st.rerun()
+def render_configuracion():
+    page_hero("⚙️ Ajustes", "Configuración del Sistema", "Secrets de Supabase, AEMET y diagnóstico de conexiones")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        section_header("🔐", "Estado de conexiones", "Verificación en tiempo real")
+        try:
+            sb = get_supabase()
+            sb.table("datos_clima").select("id").limit(1).execute()
+            st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ Supabase conectado</div><div class="alert-desc">Lectura de tablas OK</div></div></div>""", unsafe_allow_html=True)
+        except Exception as e:
+            st.markdown(f"""<div class="alert-item alert-critical"><div class="alert-dot dot-red"></div><div><div class="alert-title">❌ Supabase no conectado</div><div class="alert-desc">{str(e)[:120]}</div></div></div>""", unsafe_allow_html=True)
+        try:
+            ak = st.secrets["AEMET_KEY"]
+            st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ AEMET configurado</div><div class="alert-desc">API key presente en secrets</div></div></div>""", unsafe_allow_html=True)
+        except Exception:
+            st.markdown("""<div class="alert-item alert-warning"><div class="alert-dot dot-amber"></div><div><div class="alert-title">⚠️ AEMET no configurado</div><div class="alert-desc">Añade AEMET_KEY en Streamlit Secrets</div></div></div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+        section_header("📖", "Cómo configurar secrets", "")
+        st.markdown("""<div style="background:#f0faf4;border:1px solid #d1ead9;border-radius:12px;padding:16px 20px;font-size:0.82rem;color:#1a5c38;line-height:1.9;"><b>1.</b> En Streamlit Cloud → tu app → <b>Settings → Secrets</b><br><b>2.</b> Pega el siguiente bloque (reemplaza las claves):</div>""", unsafe_allow_html=True)
+        st.code('SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"\nSUPABASE_KEY = "tu_clave_supabase"\nAEMET_KEY    = "tu_clave_aemet"', language="toml")
+        st.warning("⚠️ Nunca pongas las claves directamente en el código Python.")
+
+    with col2:
+        section_header("📊", "Tablas y vistas disponibles", "Estado de cada fuente de datos")
+        tablas = [
+            ("datos_clima",             "🌤️", "Meteorología histórica",     "13 cols"),
+            ("datos_energia",           "⚡", "Precios energía eléctrica",  "7 cols"),
+            ("precios_agricolas",       "🌾", "Precios lonja",              "14 cols"),
+            ("mercados_internacionales","🌍", "Mercados internacionales",   "9 cols"),
+            ("mapeo_productos",         "🗂️", "Catálogo productos",        "4 cols"),
+            ("v_mapa_operaciones",      "📍", "Vista mapa estaciones",      "12 cols"),
+            ("v_salud_sectores",        "💚", "Vista salud sectores",       "6 cols"),
+            ("v_alertas_clima_extrema", "🌩️", "Vista alertas clima",       "5 cols"),
+            ("v_alertas_energia",       "⚡", "Vista alertas energía",      "6 cols"),
+            ("v_comparativa_mercados",  "📊", "Vista comparativa",          "6 cols"),
+        ]
+        sb = get_supabase()
+        for tabla, icon, desc, cols_info in tablas:
+            n, color = "—", "#ef4444"
+            if sb:
+                try:
+                    r = sb.table(tabla).select("*", count="exact").limit(1).execute()
+                    n = str(r.count) if r.count is not None else "✓"; color = "#27a05e"
+                except:
+                    n, color = "err", "#f59e0b"
+            st.markdown(f"""
+            <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
+                <span>{icon}</span>
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:0.82rem;color:#0d2b1a;font-family:'DM Mono',monospace;">{tabla}</div>
+                    <div style="font-size:0.72rem;color:#7aa98e;">{desc} · {cols_info}</div>
+                </div>
+                <span style="font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:700;color:{color};">{n}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+        if st.button("🔄 Limpiar caché y reconectar", use_container_width=True):
+            st.cache_data.clear(); st.cache_resource.clear()
+            st.success("Caché limpiada. Reconectando..."); st.rerun()
 
 def main():
     if "logged_in" not in st.session_state:
@@ -1048,7 +1014,7 @@ def main():
         elif "Mercados"    in page: render_mercados()
         elif "Productos"   in page: render_monitor_productos()
         elif "Alertas"     in page: render_alertas()
-        # elif "Configuraci" in page: render_configuracion()  # DESHABILITADO TEMPORALMENTE
+        elif "Configuraci" in page: render_configuracion()
     except Exception as e:
         st.error(f"Error al cargar la sección: {e}")
         st.info("Pulsa '🔄 Restablecer Datos' en el menú lateral o recarga la página.")
