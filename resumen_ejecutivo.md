@@ -128,7 +128,7 @@ Construido sobre Python, Streamlit, Supabase (PostgreSQL) y GitHub Actions. Cód
 
 ---
 
-*Para consultas, inversión o integración institucional, contactarse via web, o wsp*
+*Para consultas, inversión o integración institucional, contactarse via web:*
 https://marcos-borrillo.lovable.app
 Wsp: https://wa.link/vvzmot
 ---
