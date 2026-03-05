@@ -132,13 +132,12 @@ Construido sobre Python, Streamlit, Supabase (PostgreSQL) y GitHub Actions. Cód
 ---
 
 ## 🚀 Próximos Pasos: Únete a la Inteligencia de Mercados Agrícolas
-AgroTech está en fase de Validación. Nos interesa contactar con agricultores innovadores,gerentes de cooperativas que quieran:
+AgroTech está en fase de Validación. Nos interesa contactar con agricultores innovadores, gerentes de cooperativas y todo aquel que quiera:
 
-Reducir sus costes energéticos.
-
-Profesionalizar la toma de decisiones con datos en tiempo real.
-
-Probar la herramienta en su propia explotación sin compromiso.
+- Reducir sus costes energéticos.
+- Profesionalizar la toma de decisiones con datos en tiempo real.
+- Informar y difundir un proyecto que aporta valor a todo un Ecosistema Productivo.
+- Probar la herramienta en su propia explotación sin compromiso.
 
 ¿Te interesa optimizar tu próxima campaña?
 
