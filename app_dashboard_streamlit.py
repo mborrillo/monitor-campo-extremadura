@@ -221,7 +221,7 @@ def render_sidebar():
             "📊  Monitor de Mercados",
             "🌐  Monitor de Productos",
             "🔔  Alertas",
-            "⚙️  Configuración",
+            # "⚙️  Configuración",  # DESHABILITADO TEMPORALMENTE — reactivar cuando sea necesario
         ]
         default_idx = 0
         if "nav_target" in st.session_state:
@@ -969,67 +969,72 @@ def render_alertas():
         else:
             st.info("Sin alertas de energía disponibles")
 
-def render_configuracion():
-    page_hero("⚙️ Ajustes", "Configuración del Sistema", "Secrets de Supabase, AEMET y diagnóstico de conexiones")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        section_header("🔐", "Estado de conexiones", "Verificación en tiempo real")
-        try:
-            sb = get_supabase()
-            sb.table("datos_clima").select("id").limit(1).execute()
-            st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ Supabase conectado</div><div class="alert-desc">Lectura de tablas OK</div></div></div>""", unsafe_allow_html=True)
-        except Exception as e:
-            st.markdown(f"""<div class="alert-item alert-critical"><div class="alert-dot dot-red"></div><div><div class="alert-title">❌ Supabase no conectado</div><div class="alert-desc">{str(e)[:120]}</div></div></div>""", unsafe_allow_html=True)
-        try:
-            ak = st.secrets["AEMET_KEY"]
-            st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ AEMET configurado</div><div class="alert-desc">API key presente en secrets</div></div></div>""", unsafe_allow_html=True)
-        except Exception:
-            st.markdown("""<div class="alert-item alert-warning"><div class="alert-dot dot-amber"></div><div><div class="alert-title">⚠️ AEMET no configurado</div><div class="alert-desc">Añade AEMET_KEY en Streamlit Secrets</div></div></div>""", unsafe_allow_html=True)
-
-        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
-        section_header("📖", "Cómo configurar secrets", "")
-        st.markdown("""<div style="background:#f0faf4;border:1px solid #d1ead9;border-radius:12px;padding:16px 20px;font-size:0.82rem;color:#1a5c38;line-height:1.9;"><b>1.</b> En Streamlit Cloud → tu app → <b>Settings → Secrets</b><br><b>2.</b> Pega el siguiente bloque (reemplaza las claves):</div>""", unsafe_allow_html=True)
-        st.code('SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"\nSUPABASE_KEY = "tu_clave_supabase"\nAEMET_KEY    = "tu_clave_aemet"', language="toml")
-        st.warning("⚠️ Nunca pongas las claves directamente en el código Python.")
-
-    with col2:
-        section_header("📊", "Tablas y vistas disponibles", "Estado de cada fuente de datos")
-        tablas = [
-            ("datos_clima",             "🌤️", "Meteorología histórica",     "13 cols"),
-            ("datos_energia",           "⚡", "Precios energía eléctrica",  "7 cols"),
-            ("precios_agricolas",       "🌾", "Precios lonja",              "14 cols"),
-            ("mercados_internacionales","🌍", "Mercados internacionales",   "9 cols"),
-            ("mapeo_productos",         "🗂️", "Catálogo productos",        "4 cols"),
-            ("v_mapa_operaciones",      "📍", "Vista mapa estaciones",      "12 cols"),
-            ("v_salud_sectores",        "💚", "Vista salud sectores",       "6 cols"),
-            ("v_alertas_clima_extrema", "🌩️", "Vista alertas clima",       "5 cols"),
-            ("v_alertas_energia",       "⚡", "Vista alertas energía",      "6 cols"),
-            ("v_comparativa_mercados",  "📊", "Vista comparativa",          "6 cols"),
-        ]
-        sb = get_supabase()
-        for tabla, icon, desc, cols_info in tablas:
-            n, color = "—", "#ef4444"
-            if sb:
-                try:
-                    r = sb.table(tabla).select("*", count="exact").limit(1).execute()
-                    n = str(r.count) if r.count is not None else "✓"; color = "#27a05e"
-                except:
-                    n, color = "err", "#f59e0b"
-            st.markdown(f"""
-            <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
-                <span>{icon}</span>
-                <div style="flex:1;">
-                    <div style="font-weight:600;font-size:0.82rem;color:#0d2b1a;font-family:'DM Mono',monospace;">{tabla}</div>
-                    <div style="font-size:0.72rem;color:#7aa98e;">{desc} · {cols_info}</div>
-                </div>
-                <span style="font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:700;color:{color};">{n}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-        if st.button("🔄 Limpiar caché y reconectar", use_container_width=True):
-            st.cache_data.clear(); st.cache_resource.clear()
-            st.success("Caché limpiada. Reconectando..."); st.rerun()
+# =============================================================================
+# SECCIÓN CONFIGURACIÓN — DESHABILITADA TEMPORALMENTE
+# Para reactivar: descomentar esta función, la opción del menú en render_sidebar()
+# y la línea elif en main().
+# =============================================================================
+# def render_configuracion():
+#     page_hero("⚙️ Ajustes", "Configuración del Sistema", "Secrets de Supabase, AEMET y diagnóstico de conexiones")
+#     col1, col2 = st.columns(2)
+#
+#     with col1:
+#         section_header("🔐", "Estado de conexiones", "Verificación en tiempo real")
+#         try:
+#             sb = get_supabase()
+#             sb.table("datos_clima").select("id").limit(1).execute()
+#             st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ Supabase conectado</div><div class="alert-desc">Lectura de tablas OK</div></div></div>""", unsafe_allow_html=True)
+#         except Exception as e:
+#             st.markdown(f"""<div class="alert-item alert-critical"><div class="alert-dot dot-red"></div><div><div class="alert-title">❌ Supabase no conectado</div><div class="alert-desc">{str(e)[:120]}</div></div></div>""", unsafe_allow_html=True)
+#         try:
+#             ak = st.secrets["AEMET_KEY"]
+#             st.markdown("""<div class="alert-item alert-ok"><div class="alert-dot dot-green"></div><div><div class="alert-title">✅ AEMET configurado</div><div class="alert-desc">API key presente en secrets</div></div></div>""", unsafe_allow_html=True)
+#         except Exception:
+#             st.markdown("""<div class="alert-item alert-warning"><div class="alert-dot dot-amber"></div><div><div class="alert-title">⚠️ AEMET no configurado</div><div class="alert-desc">Añade AEMET_KEY en Streamlit Secrets</div></div></div>""", unsafe_allow_html=True)
+#
+#         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+#         section_header("📖", "Cómo configurar secrets", "")
+#         st.markdown("""<div style="background:#f0faf4;border:1px solid #d1ead9;border-radius:12px;padding:16px 20px;font-size:0.82rem;color:#1a5c38;line-height:1.9;"><b>1.</b> En Streamlit Cloud → tu app → <b>Settings → Secrets</b><br><b>2.</b> Pega el siguiente bloque (reemplaza las claves):</div>""", unsafe_allow_html=True)
+#         st.code('SUPABASE_URL = "https://zzucvsremavkikecsptg.supabase.co"\nSUPABASE_KEY = "tu_clave_supabase"\nAEMET_KEY    = "tu_clave_aemet"', language="toml")
+#         st.warning("⚠️ Nunca pongas las claves directamente en el código Python.")
+#
+#     with col2:
+#         section_header("📊", "Tablas y vistas disponibles", "Estado de cada fuente de datos")
+#         tablas = [
+#             ("datos_clima",             "🌤️", "Meteorología histórica",     "13 cols"),
+#             ("datos_energia",           "⚡", "Precios energía eléctrica",  "7 cols"),
+#             ("precios_agricolas",       "🌾", "Precios lonja",              "14 cols"),
+#             ("mercados_internacionales","🌍", "Mercados internacionales",   "9 cols"),
+#             ("mapeo_productos",         "🗂️", "Catálogo productos",        "4 cols"),
+#             ("v_mapa_operaciones",      "📍", "Vista mapa estaciones",      "12 cols"),
+#             ("v_salud_sectores",        "💚", "Vista salud sectores",       "6 cols"),
+#             ("v_alertas_clima_extrema", "🌩️", "Vista alertas clima",       "5 cols"),
+#             ("v_alertas_energia",       "⚡", "Vista alertas energía",      "6 cols"),
+#             ("v_comparativa_mercados",  "📊", "Vista comparativa",          "6 cols"),
+#         ]
+#         sb = get_supabase()
+#         for tabla, icon, desc, cols_info in tablas:
+#             n, color = "—", "#ef4444"
+#             if sb:
+#                 try:
+#                     r = sb.table(tabla).select("*", count="exact").limit(1).execute()
+#                     n = str(r.count) if r.count is not None else "✓"; color = "#27a05e"
+#                 except:
+#                     n, color = "err", "#f59e0b"
+#             st.markdown(f"""
+#             <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
+#                 <span>{icon}</span>
+#                 <div style="flex:1;">
+#                     <div style="font-weight:600;font-size:0.82rem;color:#0d2b1a;font-family:'DM Mono',monospace;">{tabla}</div>
+#                     <div style="font-size:0.72rem;color:#7aa98e;">{desc} · {cols_info}</div>
+#                 </div>
+#                 <span style="font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:700;color:{color};">{n}</span>
+#             </div>
+#             """, unsafe_allow_html=True)
+#         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+#         if st.button("🔄 Limpiar caché y reconectar", use_container_width=True):
+#             st.cache_data.clear(); st.cache_resource.clear()
+#             st.success("Caché limpiada. Reconectando..."); st.rerun()
 
 def main():
     if "logged_in" not in st.session_state:
@@ -1043,7 +1048,7 @@ def main():
         elif "Mercados"    in page: render_mercados()
         elif "Productos"   in page: render_monitor_productos()
         elif "Alertas"     in page: render_alertas()
-        elif "Configuraci" in page: render_configuracion()
+        # elif "Configuraci" in page: render_configuracion()  # DESHABILITADO TEMPORALMENTE
     except Exception as e:
         st.error(f"Error al cargar la sección: {e}")
         st.info("Pulsa '🔄 Restablecer Datos' en el menú lateral o recarga la página.")
