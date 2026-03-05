@@ -42,7 +42,7 @@ Los agricultores y cooperativas de Extremadura operan con información fragmenta
 
 ---
 
-## Impacto del Cambio
+## Impacto del Cambio:
 
 | Ahora | Valor Diferencial de AgroTech |
 |--------|------------|
