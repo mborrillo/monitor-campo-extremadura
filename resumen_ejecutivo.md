@@ -8,7 +8,7 @@
 
 AgroTech es una plataforma digital de monitorización y análisis para el sector agrícola de España, y Extremadura en particular. En una sola pantalla, el productor ve el estado de sus parcelas, el precio al que cotiza su cosecha en los mercados globales, cuánto cuesta regar en este momento y si hay riesgo climático en las próximas horas.
 
-No es una app de previsión del tiempo. No es una hoja de cálculo de precios. Es la combinación de ambas cosas — y más — conectada a datos reales y actualizada automáticamente cada día.
+No es una app de previsión del tiempo. No es una hoja de cálculo de precios. Es una herramienta inteligente que se conecta a datos reales y que se actualiza automáticamente cada día.
 
 **Disponible en:** [agro-tech.streamlit.app](https://agro-tech.streamlit.app)
 
