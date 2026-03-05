@@ -116,7 +116,7 @@ Para obtener mas detalle de la definición y configuración de los umbrales, ver
 
 - ✅ Dashboard operativo con datos reales de Supabase: [agro-tech.streamlit.app](https://agro-tech.streamlit.app/)
 - ✅ Ingesta automática diaria: clima (AEMET), mercados (Yahoo Finance), energía (REE)
-- ✅ Secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Alertas
+- ✅ Secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Alertas (En construcción)
 - ✅ Exportación de datos a Excel
 - 🔄 En desarrollo: frontend complementario para moviles: [agro-tech-es.lovable.app](https://agro-tech-es.lovable.app)
 - 🔄 Próximo: autenticación por roles, notificaciones push, API abierta para terceros
