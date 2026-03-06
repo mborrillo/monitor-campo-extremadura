@@ -34,7 +34,7 @@ ESTACIONES_EXTREMADURA = {
     "3434X": {"nombre": "NAVALMORAL DE LA MATA", "lat": 39.889, "lon": -5.541},
     "4386B": {"nombre": "LLERENA", "lat": 38.238, "lon": -6.012},
     "4411C": {"nombre": "ALCUESCAR", "lat": 39.181, "lon": -6.230},
-    "3463Y": {"nombre": "TRUJILLO - España", "lat": 39.462, "lon": -5.877},
+    "3463Y": {"nombre": "TRUJILLO", "lat": 39.462, "lon": -5.877},
     "4511C": {"nombre": "JEREZ DE LOS CABALLEROS", "lat": 38.324, "lon": -6.772},
     "4501X": {"nombre": "FUENTE DE CANTOS", "lat": 38.243, "lon": -6.311},
     "4499X": {"nombre": "MONESTERIO", "lat": 38.087, "lon": -6.273},
@@ -45,10 +45,12 @@ ESTACIONES_EXTREMADURA = {
     "4395X": {"nombre": "VILLAFRANCA DE LOS BARROS", "lat": 38.563, "lon": -6.335},
     "4362X": {"nombre": "RETAMAL DE LLERENA", "lat": 38.577, "lon": -5.836},
     "3562X": {"nombre": "ALISEDA", "lat": 39.421, "lon": -6.691},
-    "3475X": {"nombre": "CAÑAVERAL-España", "lat": 39.790, "lon": -6.391},
+    "3475X": {"nombre": "CAÑAVERAL", "lat": 39.790, "lon": -6.391},
     "3436D": {"nombre": "GARGANTA LA OLLA", "lat": 40.111, "lon": -5.773},
     "3455X": {"nombre": "JARAICEJO", "lat": 39.667, "lon": -5.811},
     "4236Y": {"nombre": "PUERTO REY", "lat": 39.423, "lon": -5.025},
+    "4492F": {"nombre": "BARCARROTA", "lat": 38.282, "lon": -6.5524},
+    "4325Y": {"nombre": "CASTUERA", "lat": 38.443, "lon": -5.3145},
     "3531X": {"nombre": "TORRECILLA DE LOS ANGELES", "lat": 40.245, "lon": -6.467}
 }
 
