@@ -9,6 +9,7 @@
 
 import os
 import requests
+import time
 from requests.adapters import HTTPAdapter
 from supabase import create_client, Client
 from datetime import datetime
@@ -126,6 +127,10 @@ def obtener_clima_inteligente():
 
         try:
             r = session.get(url_aemet, params=params, timeout=8)
+            if r.status_code == 429:
+                print(f"⚠️  {ciudad}: AEMET rate limit (429) — esperando 5s")
+                time.sleep(5)
+                continue
             if r.status_code != 200:
                 print(f"⚠️  {ciudad}: AEMET status {r.status_code}")
                 continue
@@ -179,6 +184,7 @@ def obtener_clima_inteligente():
 
                     supabase.table("datos_clima").upsert(registro, on_conflict="fecha, estacion").execute()
                     print(f"✅ {ciudad}: Max {t_max}° / Min {t_min}° / Lluvia {round(p_acumulada, 2)}mm")
+                    time.sleep(1.5)  # Respetar rate limit AEMET
         
         except Exception as e:
             print(f"❌ Error procesando {ciudad}: {e}")
