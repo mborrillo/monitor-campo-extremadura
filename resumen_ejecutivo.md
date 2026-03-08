@@ -1,6 +1,6 @@
 # 🌿 AgroTech — Resumen Ejecutivo
 
-> **"El campo extremeño produce con esfuerzo. Nosotros le damos la información para que ese esfuerzo rinda más."**
+> **"El campo extremeño produce con esfuerzo y perseverancia. AgroTech le da la información para que su dedicación y esfuerzo rinda más."**
 
 ---
 
@@ -32,8 +32,12 @@ Temperatura, humedad, viento y precipitación en tiempo real desde estaciones de
 **📊 Comparativa de mercados: local vs. global**
 El precio de la Lonja de Extremadura comparado directamente con los futuros internacionales de Chicago y Londres, convertidos a la misma unidad (€/kg). Si el trigo local está infravalorado respecto al mercado global, el sistema lo muestra en verde. Si el productor está vendiendo por encima del precio de referencia, también lo sabe.
 
-**⚡ Gestión del coste energético**
-El sistema cruza el precio de la electricidad (PVPC, actualizado por hora) con las condiciones meteorológicas. El resultado: una recomendación concreta sobre cuándo regar para minimizar el gasto en energía.
+**⚡ Gestión del coste energético — Monitor de Energía**
+El sistema obtiene el precio PVPC de la electricidad (REE) y calcula diariamente los analytics clave: precio medio, hora más barata, hora más cara y variación respecto al día anterior. El resultado se presenta en tres bloques accionables:
+
+- **Panel de Decisión Diaria:** semáforo VERDE/AMARILLO/ROJO con la recomendación del día ("Momento óptimo para riego y bombeo" / "Posponer consumo intensivo") y los KPIs de precio mínimo, máximo y ahorro potencial.
+- **Calculadora de Ahorro:** el agricultor introduce la potencia de su bomba y las horas de riego previstas y obtiene al instante el coste en hora valle, precio medio y hora punta, con el ahorro real en euros si elige la franja óptima.
+- **Histórico de precios:** evolución diaria de los últimos 90 días con gráfico y tabla exportable a Excel, filtrable por período, tramo y estado de costo.
 
 **🗺️ Mapa de operaciones**
 Vista geográfica de todas las estaciones activas, con semáforo de estado (Óptimo / Precaución / Crítico) según las condiciones actuales de tratamiento y riego. Útil para cooperativas que gestionan múltiples explotaciones.
@@ -112,13 +116,34 @@ Para obtener mas detalle de la definición y configuración de los umbrales, ver
 
 ---
 
+## 5. Vista: `v_resumen_energia` — El Panel de Decisión Energética
+
+**Objetivo:** Traducir el precio de la electricidad en una acción concreta y medible en euros.
+
+**Fundamento:** El PVPC varía cada hora pero el agricultor no puede monitorizarlo constantemente. Esta vista agrega las 24 horas del día en un único registro diario con los indicadores que realmente importan: cuándo es más barato encender la bomba, cuánto más caro es el pico de tarde, y si hoy es mejor o peor que ayer.
+
+**Estructura de datos clave:**
+- `precio_medio` / `precio_min` / `precio_max` — estadística básica del día
+- `hora_min` / `hora_max` — hora exacta del valle y la punta
+- `tramo_mayoria` — tramo predominante del día (Valle / Llano / Punta)
+- `var_per_prev` — variación porcentual vs el día anterior (se calcula en el ETL)
+- `estado_costo` — clasificación ALTO / NORMAL / BAJO según umbrales (>0.15€ / <0.10€)
+- `recomendacion_consumo` — texto accionable generado automáticamente por la lógica de la vista
+
+**Por qué `datos_energias` y no `datos_energia`:** El modelo anterior almacenaba 24 filas por día (una por hora), lo que impedía calcular comparativas diarias de forma limpia. La nueva tabla guarda 1 registro/día con los analytics ya calculados, lo que simplifica todas las consultas y permite escalar el histórico sin degradar la performance.
+
+---
+
+## Estado actual
+
 ## Estado actual
 
 - ✅ Dashboard operativo con datos reales de Supabase: [agro-tech.streamlit.app](https://agro-tech.streamlit.app/)
 - ✅ Ingesta automática diaria: clima (AEMET), mercados (Yahoo Finance), energía (REE)
-- ✅ Secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Alertas (En construcción)
-- ✅ Exportación de datos a Excel
-- 🔄 En desarrollo: frontend complementario para moviles: [agro-tech-es.lovable.app](https://agro-tech-es.lovable.app)
+- ✅ Secciones activas: Dashboard, Mapa de Operaciones, Monitor de Mercados, Monitor de Productos, Monitor de Energía, Alertas (En construcción)
+- ✅ Monitor de Energía: panel de decisión diaria, calculadora de ahorro y histórico PVPC
+- ✅ Exportación de datos a Excel en todas las secciones
+- 🔄 En desarrollo: frontend complementario para móviles: [agro-tech-es.lovable.app](https://agro-tech-es.lovable.app)
 - 🔄 Próximo: autenticación por roles, notificaciones push, API abierta para terceros
 
 ---
