@@ -1,4 +1,4 @@
-# 🌿 AgroTech ES — Monitor Campo Extremadura
+# 🌿 AgroTech ES — Inteligencia en Marcados Agrarios
 
 > Plataforma de inteligencia de datos para el sector agropecuario de Extremadura. Conecta el clima local, los precios de la lonja, los mercados internacionales y el coste energético en un único panel de decisión.
 
@@ -37,6 +37,7 @@ Los agricultores y cooperativas de Extremadura operan con información fragmenta
 - **Mapa de Operaciones** — Estaciones geolocalizadas con estado (Óptimo / Precaución / Crítico) según tratamiento
 - **Monitor de Mercados** — Comparativa precio local vs. internacional con diferencial de arbitraje
 - **Monitor de Productos** — Evolución histórica de precios internacionales por categoría, exportable a Excel
+- **Monitor de Energía** — Panel de decisión diaria (semáforo PVPC), calculadora de ahorro por franja horaria e histórico de precios exportable a Excel
 - **Centro de Alertas** — Clima extremo y energía con estado por franja horaria
 - **Configuración** — Estado de conexión a Supabase y estadísticas de tablas
 
@@ -59,7 +60,7 @@ FUENTES EXTERNAS          SCRIPTS ETL (Python)       BASE DE DATOS          DASH
 ─────────────────         ────────────────────        ─────────────────      ──────────
 AEMET API          ──▶   clima_monitor.py      ──▶   datos_clima            
 Yahoo Finance      ──▶   mercado_monitor.py    ──▶   mercados_int.          ──▶  Streamlit
-PVPC (REE)         ──▶   energia_monitor.py    ──▶   datos_energia               app_dashboard
+PVPC (REE)         ──▶   energia_monitor.py    ──▶   datos_energias              app_dashboard
 Lonja Extremadura  ──▶   monitor_agrotech_v1   ──▶   precios_agricolas           _streamlit.py
                                                       │
                                                Vistas SQL (lógica)
@@ -68,6 +69,7 @@ Lonja Extremadura  ──▶   monitor_agrotech_v1   ──▶   precios_agricol
                                                v_salud_sectores
                                                v_alertas_clima_extrema
                                                v_monitor_productos
+                                               v_resumen_energia
 ```
 
 Los scripts ETL se ejecutan **automáticamente cada mañana** via GitHub Actions (`.github/workflows/`).
@@ -150,7 +152,7 @@ python energia_monitor.py
 | `datos_clima` | Variables meteorológicas por estación y fecha (AEMET) |
 | `precios_agricolas` | Precios de cierre de la Lonja de Extremadura |
 | `mercados_internacionales` | Futuros internacionales (Chicago, NY) via Yahoo Finance |
-| `datos_energia` | Precio PVPC de la electricidad por hora (REE) |
+| `datos_energias` | Analytics PVPC diarios: precio medio, mínimo, máximo, hora óptima y variación vs día anterior (REE) |
 | `correlaciones_agro` | Mapa de correlación entre productos locales y mercados de referencia internacionales |
 
 ### Vistas SQL (lógica de negocio)
@@ -161,7 +163,7 @@ python energia_monitor.py
 | `v_comparativa_mercados` | Diferencial de arbitraje: precio local vs. internacional convertido a €/kg |
 | `v_salud_sectores` | Salud de cada sector (Cereales, Aceites, Ganadería…): variación media y productos al alza/baja |
 | `v_alertas_clima_extrema` | Registros con temperaturas o condiciones fuera de rango normal |
-| `v_alertas_energia` | Franjas horarias con coste eléctrico elevado |
+| `v_resumen_energia` | Analytics PVPC diarios: estado de costo (ALTO/NORMAL/BAJO) y recomendación de consumo por franja |
 | `v_monitor_productos` | Evolución histórica de productos internacionales con tendencia y variación |
 
 ---
