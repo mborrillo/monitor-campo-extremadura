@@ -187,8 +187,8 @@ def render_login():
         st.markdown("""
         <div class="login-wrap">
             <div style="font-size:3rem">🌿</div>
-            <div style="font-size:1.6rem;font-weight:800;color:#0d2b1a;">AgroTech Extremadura</div>
-            <div style="color:#7aa98e;font-size:0.9rem;margin:8px 0 32px;">Monitor del Campo Extremeño</div>
+            <div style="font-size:1.6rem;font-weight:800;color:#0d2b1a;">AgroTech</div>
+            <div style="color:#7aa98e;font-size:0.9rem;margin:8px 0 32px;">Inteligencia en Mercados Agrarios</div>
         </div>
         """, unsafe_allow_html=True)
         with st.form("login_form"):
@@ -211,7 +211,7 @@ def render_sidebar():
         <div style="text-align:center;padding:20px 0 28px;">
             <div style="font-size:2.5rem;">🌿</div>
             <div style="font-size:1.1rem;font-weight:800;color:#d6f5e5;margin-top:6px;">AgroTech</div>
-            <div style="font-size:0.72rem;color:#5fd494;letter-spacing:0.12em;text-transform:uppercase;">Monitor del Campo</div>
+            <div style="font-size:0.72rem;color:#5fd494;letter-spacing:0.12em;text-transform:uppercase;">Inteligencia en Mercados Agrarios</div>
         </div>
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:20px;">
         """, unsafe_allow_html=True)
