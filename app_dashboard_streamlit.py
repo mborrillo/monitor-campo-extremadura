@@ -221,6 +221,7 @@ def render_sidebar():
             "🗺️  Mapa de Operaciones",
             "📊  Monitor de Mercados",
             "🌐  Monitor de Productos",
+            "⚡  Monitor de Energía",
             "🔔  Alertas",
             "⚙️  Configuración",
         ]
@@ -255,6 +256,8 @@ def render_sidebar():
                 "merc_anio_mes", "merc_fecha", "merc_relacion", "merc_buscar",
                 # Monitor de Productos
                 "prod_anio_mes", "prod_fecha", "prod_categoria", "prod_tendencia", "prod_buscar",
+                # Monitor de Energía
+                "en_periodo", "en_tramo", "en_estado", "en_buscar",
             ]
             for k in filter_keys:
                 if k in st.session_state:
@@ -963,6 +966,235 @@ def render_monitor_productos():
     else:
         st.info("Sin datos disponibles con los filtros seleccionados")
 
+
+def render_energia():
+    df = load("v_resumen_energia", order_col="fecha", limit=90)
+
+    if not df.empty and "fecha" in df.columns:
+        df["fecha"] = pd.to_datetime(df["fecha"])
+        ultima_fecha = df["fecha"].max()
+    else:
+        ultima_fecha = None
+
+    page_hero("⚡ Energía", "Monitor de Energía", "Precios PVPC diarios y planificación de consumo", ultima_act=ultima_fecha)
+
+    if df.empty:
+        st.info("Sin datos de energía disponibles aún. El pipeline se ejecuta una vez al día.")
+        return
+
+    # Filtros
+    f1, f2, f3, f4 = st.columns([1, 1, 1, 1.5])
+    with f1:
+        anio_mes_opts = sorted(df["fecha"].dropna().apply(lambda d: d.strftime("%Y-%m")).unique().tolist(), reverse=True)
+        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los períodos...", key="en_periodo")
+    with f2:
+        tramo_opts = ["Todos"] + sorted(df["tramo_mayoria"].dropna().unique().tolist())
+        filtro_tramo = st.selectbox("Tramo predominante", tramo_opts, key="en_tramo")
+    with f3:
+        estado_opts = ["Todos"] + sorted(df["estado_costo"].dropna().unique().tolist())
+        filtro_estado = st.selectbox("Estado costo", estado_opts, key="en_estado")
+    with f4:
+        buscar_fecha = st.text_input("🔍 Buscar fecha", placeholder="ej: 2026-03...", key="en_buscar")
+
+    df_f = df.copy()
+    if filtro_periodo:
+        df_f = df_f[df_f["fecha"].apply(lambda d: d.strftime("%Y-%m")).isin(filtro_periodo)]
+    if filtro_tramo != "Todos":
+        df_f = df_f[df_f["tramo_mayoria"] == filtro_tramo]
+    if filtro_estado != "Todos":
+        df_f = df_f[df_f["estado_costo"] == filtro_estado]
+    if buscar_fecha:
+        df_f = df_f[df_f["fecha"].astype(str).str.contains(buscar_fecha, case=False, na=False)]
+    df_f = df_f.sort_values("fecha", ascending=False).reset_index(drop=True)
+    hoy = df_f.iloc[0].to_dict() if not df_f.empty else None
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # BLOQUE 1 — PANEL DE DECISIÓN DIARIA
+    section_header("🔋", "Panel de Decisión Diaria", "Recomendación de consumo para hoy")
+
+    if hoy is not None:
+        estado = str(hoy.get("estado_costo", "") or "").upper()
+        if estado == "BAJO":
+            sem_bg, sem_col, sem_icon, sem_txt = "#dcfce7", "#15803d", "🟢", "PRECIO BAJO — Momento óptimo para riego y bombeo"
+        elif estado == "ALTO":
+            sem_bg, sem_col, sem_icon, sem_txt = "#fee2e2", "#b91c1c", "🔴", "PRECIO ALTO — Posponer consumo intensivo"
+        else:
+            sem_bg, sem_col, sem_icon, sem_txt = "#fef3c7", "#b45309", "🟡", "PRECIO NORMAL — Consumo moderado permitido"
+
+        var = hoy.get("var_per_prev", None)
+        var_str = (f"{'↑' if float(var) > 0 else '↓'} {abs(float(var)):.1f}% vs ayer") if var is not None else "Sin referencia anterior"
+        var_col = "#b91c1c" if (float(var) if var else 0) > 0 else "#15803d" if (float(var) if var else 0) < 0 else "#7aa98e"
+        fecha_hoy_str = hoy["fecha"].strftime("%d/%m/%Y") if hasattr(hoy["fecha"], "strftime") else str(hoy["fecha"])
+
+        st.markdown(f"""
+        <div style="background:{sem_bg};border:2px solid {sem_col};border-radius:16px;padding:20px 28px;margin-bottom:20px;display:flex;align-items:center;gap:20px;">
+            <span style="font-size:3rem;">{sem_icon}</span>
+            <div style="flex:1">
+                <div style="font-size:1.1rem;font-weight:800;color:{sem_col};margin-bottom:4px;">{sem_txt}</div>
+                <div style="font-size:0.85rem;color:#475569;">📅 {fecha_hoy_str} &nbsp;·&nbsp; <span style="color:{var_col};font-weight:600;">{var_str}</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        k1, k2, k3, k4 = st.columns(4)
+        kpi_card(k1, "kpi-green", "⚡", f"{float(hoy.get('precio_medio', 0) or 0):.4f}€", "Precio Medio", "€/kWh hoy")
+        kpi_card(k2, "kpi-blue",  "📉", f"{float(hoy.get('precio_min', 0) or 0):.4f}€", "Precio Mínimo", f"Hora {hoy.get('hora_min','—')}:00h")
+        kpi_card(k3, "kpi-red",   "📈", f"{float(hoy.get('precio_max', 0) or 0):.4f}€", "Precio Máximo", f"Hora {hoy.get('hora_max','—')}:00h")
+        p_min = float(hoy.get("precio_min", 0) or 0)
+        p_max = float(hoy.get("precio_max", 0) or 0)
+        ahorro_10kw = round((p_max - p_min) * 10, 3)
+        kpi_card(k4, "kpi-amber", "💰", f"{ahorro_10kw:.3f}€", "Ahorro pot. 10kW·h", "Valle vs Punta")
+    else:
+        st.info("Sin datos para hoy todavía.")
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    # BLOQUE 2 — CALCULADORA DE AHORRO
+    section_header("💡", "Calculadora de Ahorro", "Estimación de coste según franja horaria")
+
+    if hoy is not None:
+        cc1, cc2 = st.columns([1, 1])
+        with cc1:
+            potencia_kw = st.number_input("Potencia de la bomba (kW)", min_value=0.5, max_value=500.0, value=10.0, step=0.5, key="en_potencia")
+            horas_riego = st.number_input("Horas de riego previstas", min_value=0.5, max_value=24.0, value=4.0, step=0.5, key="en_horas")
+
+        p_min_c = float(hoy.get("precio_min", 0) or 0)
+        p_max_c = float(hoy.get("precio_max", 0) or 0)
+        p_med_c = float(hoy.get("precio_medio", 0) or 0)
+        h_min_c = hoy.get("hora_min", "—")
+        h_max_c = hoy.get("hora_max", "—")
+
+        coste_valle = round(potencia_kw * horas_riego * p_min_c, 4)
+        coste_punta = round(potencia_kw * horas_riego * p_max_c, 4)
+        coste_medio = round(potencia_kw * horas_riego * p_med_c, 4)
+        ahorro_tot  = round(coste_punta - coste_valle, 4)
+
+        with cc2:
+            st.markdown(f"""
+            <div style="background:white;border:1px solid var(--border);border-radius:16px;padding:20px 24px;box-shadow:0 2px 12px rgba(13,43,26,0.07);">
+                <p style="font-size:0.75rem;font-weight:700;color:#7aa98e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Estimación para {potencia_kw} kW · {horas_riego}h</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.88rem;color:#0d2b1a;">🟢 Hora Valle (hora {h_min_c}:00)</span>
+                    <span style="font-family:'DM Mono',monospace;font-weight:700;color:#15803d;font-size:1rem;">{coste_valle:.4f} €</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.88rem;color:#0d2b1a;">🟡 Precio Medio del día</span>
+                    <span style="font-family:'DM Mono',monospace;font-weight:700;color:#b45309;font-size:1rem;">{coste_medio:.4f} €</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:0.88rem;color:#0d2b1a;">🔴 Hora Punta (hora {h_max_c}:00)</span>
+                    <span style="font-family:'DM Mono',monospace;font-weight:700;color:#b91c1c;font-size:1rem;">{coste_punta:.4f} €</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;">
+                    <span style="font-size:0.92rem;font-weight:700;color:#0d2b1a;">💰 Ahorro potencial</span>
+                    <span style="font-family:'DM Mono',monospace;font-weight:800;color:#15803d;font-size:1.15rem;">{ahorro_tot:.4f} €</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("Sin datos para calcular ahorro.")
+
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+    # BLOQUE 3 — HISTÓRICO DE PRECIOS
+    total_rows = len(df_f)
+    fecha_header = df_f["fecha"].max().strftime("%d/%m/%Y") if not df_f.empty else "—"
+
+    hdr_en = st.columns([0.05, 0.78, 0.17])
+    with hdr_en[0]:
+        st.markdown('<div style="width:40px;height:40px;background:linear-gradient(135deg,#27a05e,#3dbd76);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(39,160,94,0.3);margin-top:2px;">📅</div>', unsafe_allow_html=True)
+    with hdr_en[1]:
+        st.markdown(f'<div style="padding-top:4px;"><p style="font-size:1.25rem;font-weight:700;color:#0d2b1a;margin:0;">Histórico de Precios</p><p style="font-size:0.8rem;color:#7aa98e;margin:0;">Última actualización: {fecha_header} &nbsp;·&nbsp; {total_rows} registros</p></div>', unsafe_allow_html=True)
+    with hdr_en[2]:
+        if not df_f.empty:
+            import io
+            output_en = io.BytesIO()
+            cols_exp = [c for c in ["fecha","precio_medio","precio_min","hora_min","precio_max","hora_max","tramo_mayoria","var_per_prev","estado_costo","recomendacion_consumo"] if c in df_f.columns]
+            df_exp = df_f[cols_exp].copy()
+            df_exp["fecha"] = df_exp["fecha"].dt.strftime("%d/%m/%Y")
+            with pd.ExcelWriter(output_en, engine="openpyxl") as writer:
+                df_exp.to_excel(writer, index=False, sheet_name="Energía")
+            st.download_button(
+                label="📥 Excel",
+                data=output_en.getvalue(),
+                file_name=f"energia_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="excel_energia"
+            )
+
+    st.markdown("<div style='border-bottom:2px solid #d1ead9;margin-bottom:12px;'></div>", unsafe_allow_html=True)
+
+    if len(df_f) > 1:
+        df_plot = df_f.sort_values("fecha")
+        colores_bar = ["#ef4444" if str(e).upper()=="ALTO" else "#27a05e" if str(e).upper()=="BAJO" else "#f59e0b" for e in df_plot.get("estado_costo", ["NORMAL"]*len(df_plot))]
+        fig_en = go.Figure()
+        fig_en.add_trace(go.Bar(x=df_plot["fecha"], y=df_plot["precio_medio"], name="Precio Medio", marker_color=colores_bar, opacity=0.85, hovertemplate="%{x|%d/%m/%Y}<br>Medio: %{y:.4f} €/kWh<extra></extra>"))
+        fig_en.add_trace(go.Scatter(x=df_plot["fecha"], y=df_plot["precio_min"], name="Mínimo", line=dict(color="#27a05e", width=1.5, dash="dot"), hovertemplate="%{x|%d/%m/%Y}<br>Mín: %{y:.4f} €/kWh<extra></extra>"))
+        fig_en.add_trace(go.Scatter(x=df_plot["fecha"], y=df_plot["precio_max"], name="Máximo", line=dict(color="#ef4444", width=1.5, dash="dot"), hovertemplate="%{x|%d/%m/%Y}<br>Máx: %{y:.4f} €/kWh<extra></extra>"))
+        layout_en = {**CHART_LAYOUT}
+        layout_en["xaxis"] = dict(showgrid=False, color="#7aa98e", title="Fecha")
+        layout_en["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="€/kWh")
+        layout_en["legend"] = dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        fig_en.update_layout(height=260, **layout_en)
+        st.plotly_chart(fig_en, use_container_width=True, config={"displayModeBar": False})
+
+    if not df_f.empty:
+        cols_t = [c for c in ["fecha","precio_medio","precio_min","hora_min","precio_max","hora_max","tramo_mayoria","var_per_prev","estado_costo"] if c in df_f.columns]
+        col_labels_t = {"fecha":"Fecha","precio_medio":"P. Medio","precio_min":"P. Mínimo","hora_min":"Hora Mín","precio_max":"P. Máximo","hora_max":"Hora Máx","tramo_mayoria":"Tramo","var_per_prev":"Var. %","estado_costo":"Estado"}
+        col_widths_t = "1.2fr " + " ".join(["1fr"] * (len(cols_t) - 1))
+        header_t_html = "".join([f'<span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">{col_labels_t.get(c,c)}</span>' for c in cols_t])
+        st.markdown(f"""
+        <div style="display:grid;grid-template-columns:{col_widths_t};gap:8px;padding:10px 20px;background:#f0faf4;border-radius:10px 10px 0 0;border:1px solid var(--border);border-bottom:2px solid var(--border);margin-bottom:2px;">
+            {header_t_html}
+        </div>
+        """, unsafe_allow_html=True)
+
+        for _, row in df_f[cols_t].iterrows():
+            est_r = str(row.get("estado_costo","") or "").upper()
+            est_bg  = "#fee2e2" if est_r=="ALTO" else "#dcfce7" if est_r=="BAJO" else "#fef3c7"
+            est_col = "#b91c1c" if est_r=="ALTO" else "#15803d" if est_r=="BAJO" else "#b45309"
+            var_r = row.get("var_per_prev", None)
+            try:
+                vf = float(var_r) if var_r is not None else None
+                vs = (f"+{vf:.1f}%" if vf > 0 else f"{vf:.1f}%") if vf is not None else "—"
+                vc = "#b91c1c" if (vf or 0) > 0 else "#15803d" if (vf or 0) < 0 else "#7aa98e"
+            except Exception:
+                vs, vc = "—", "#7aa98e"
+            try:
+                fecha_r_str = pd.to_datetime(row.get("fecha","")).strftime("%d/%m/%Y")
+            except Exception:
+                fecha_r_str = str(row.get("fecha","—"))
+
+            cells_t = []
+            for c in cols_t:
+                if c == "fecha":
+                    cells_t.append(f'<span style="font-family:DM Mono,monospace;font-size:0.8rem;color:#7aa98e;">{fecha_r_str}</span>')
+                elif c in ["precio_medio","precio_min","precio_max"]:
+                    v = row.get(c, 0)
+                    cells_t.append(f'<span style="font-family:DM Mono,monospace;font-size:0.85rem;color:#1a5c38;font-weight:600;">{float(v):.4f}</span>')
+                elif c in ["hora_min","hora_max"]:
+                    cells_t.append(f'<span style="font-family:DM Mono,monospace;font-size:0.85rem;color:#475569;">{row.get(c,"—")}:00h</span>')
+                elif c == "tramo_mayoria":
+                    t = str(row.get(c,"") or "")
+                    t_bg  = "#dcfce7" if t=="Valle" else "#fef3c7" if t=="Llano" else "#fee2e2"
+                    t_col = "#15803d" if t=="Valle" else "#b45309" if t=="Llano" else "#b91c1c"
+                    cells_t.append(f'<span style="font-size:0.78rem;font-weight:700;background:{t_bg};color:{t_col};padding:3px 8px;border-radius:20px;">{t}</span>')
+                elif c == "var_per_prev":
+                    cells_t.append(f'<span style="font-family:DM Mono,monospace;font-size:0.85rem;font-weight:700;color:{vc};">{vs}</span>')
+                elif c == "estado_costo":
+                    cells_t.append(f'<span style="font-size:0.78rem;font-weight:700;background:{est_bg};color:{est_col};padding:3px 8px;border-radius:20px;">{est_r}</span>')
+            cells_t_html = "".join([f"<span>{cell}</span>" for cell in cells_t])
+            st.markdown(f"""
+            <div style="display:grid;grid-template-columns:{col_widths_t};gap:8px;align-items:center;padding:12px 20px;background:white;border:1px solid var(--border);border-top:none;">
+                {cells_t_html}
+            </div>
+            """, unsafe_allow_html=True)
+        st.caption(f"{total_rows} registros mostrados")
+    else:
+        st.info("Sin datos con los filtros seleccionados.")
+
 def render_alertas():
     page_hero("🔔 Notificaciones", "Centro de Alertas", "Clima extremo y energía")
     df_clima = load("v_alertas_clima_extrema", order_col="fecha")
@@ -1141,6 +1373,7 @@ def main():
         elif "Mapa"        in page: render_mapa()
         elif "Mercados"    in page: render_mercados()
         elif "Productos"   in page: render_monitor_productos()
+        elif "Energía"     in page: render_energia()
         elif "Alertas"     in page: render_alertas()
         elif "Configuraci" in page: render_configuracion()
     except Exception as e:
