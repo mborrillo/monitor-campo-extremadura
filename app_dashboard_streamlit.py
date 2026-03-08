@@ -92,7 +92,7 @@ button[kind="header"] { display: flex !important; visibility: visible !important
 .alert-title { font-weight:700; font-size:0.88rem; color:#0d2b1a; }
 .alert-desc  { font-size:0.8rem; color:#4a7c5f; margin-top:2px; }
 .alert-time  { font-size:0.72rem; color:#7aa98e; margin-top:4px; font-family:'DM Mono',monospace; }
-.page-hero { background: linear-gradient(135deg, var(--green-900) 0%, var(--green-700) 100%); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 28px; color: white; position: relative; overflow: hidden; }
+.page-hero { background: linear-gradient(135deg, var(--green-900) 0%, var(--green-700) 100%); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 28px; color: white; position: sticky; top: 0; z-index: 100; overflow: hidden; }
 .page-hero::after { content:'🌿'; position:absolute; right:30px; top:50%; transform:translateY(-50%); font-size:5rem; opacity:0.15; }
 .page-hero h1  { color:white !important; font-size:1.7rem; font-weight:800; margin:0 0 4px; }
 .page-hero p   { color:rgba(255,255,255,0.7); margin:0; font-size:0.9rem; }
@@ -146,12 +146,13 @@ def section_header(icon, title, sub=""):
     </div>
     """, unsafe_allow_html=True)
 
-def page_hero(badge, title, subtitle):
+def page_hero(badge, title, subtitle, ultima_act=None):
+    fecha_str = ultima_act.strftime("%d/%m/%Y %H:%M") if ultima_act is not None else datetime.now().strftime("%d/%m/%Y")
     st.markdown(f"""
     <div class="page-hero">
         <span class="hero-badge">{badge}</span>
         <h1>{title}</h1>
-        <p>{subtitle}</p>
+        <p>{subtitle} &nbsp;·&nbsp; <span style="opacity:0.85;">🕐 Última actualización: {fecha_str}</span></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -246,9 +247,21 @@ def render_sidebar():
 
         if st.button("🔄 Restablecer Datos", use_container_width=True):
             st.cache_data.clear()
-            # Limpiar todos los filtros y estado de paginación de todas las páginas
-            keys_to_clear = [k for k in st.session_state if k not in ("logged_in", "user_email", "user_name", "nav_target")]
-            for k in keys_to_clear:
+            # Limpiar explícitamente todos los filtros de todas las páginas
+            filter_keys = [
+                # Mapa de Operaciones
+                "mapa_comarca", "mapa_tratamiento", "mapa_riego", "mapa_buscar",
+                # Monitor de Mercados
+                "merc_anio_mes", "merc_fecha", "merc_relacion", "merc_buscar",
+                # Monitor de Productos
+                "prod_anio_mes", "prod_fecha", "prod_categoria", "prod_tendencia", "prod_buscar",
+            ]
+            for k in filter_keys:
+                if k in st.session_state:
+                    del st.session_state[k]
+            # Limpiar también cualquier otra key de estado (paginación, etc.)
+            extra_keys = [k for k in st.session_state if k not in ("logged_in", "user_email", "user_name", "nav_target")]
+            for k in extra_keys:
                 del st.session_state[k]
             st.rerun()
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
@@ -259,7 +272,7 @@ def render_sidebar():
     return nav.split("  ", 1)[-1]
 
 def render_dashboard():
-    page_hero("🌱 Vista general", "Dashboard Principal", "Estado actual del campo extremeño — datos en tiempo real")
+    page_hero("🌱 Vista general", "Dashboard Principal", "Estado actual del campo extremeño")
     df_mapa  = load("v_mapa_operaciones")
     df_salud = load("v_salud_sectores")
 
@@ -535,7 +548,7 @@ def render_mercados():
                 df_c["fecha"].dropna().apply(lambda d: d.strftime("%Y-%m")).unique().tolist(),
                 reverse=True
             )
-        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los periodos...")
+        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los periodos...", key="merc_anio_mes")
 
     with f2:
         # Fecha — lista todos los días con datos, orden cronológico descendente
@@ -543,17 +556,17 @@ def render_mercados():
         if not df_c.empty and "fecha" in df_c.columns:
             fechas_unicas = sorted(df_c["fecha"].dropna().dt.normalize().unique(), reverse=True)
             fecha_opts += [pd.Timestamp(f).strftime("%d/%m/%Y") for f in fechas_unicas]
-        filtro_fecha = st.selectbox("Fecha", fecha_opts)
+        filtro_fecha = st.selectbox("Fecha", fecha_opts, key="merc_fecha")
 
     with f3:
         # Mercado Referencia
         relacion_opts = ["Todos"]
         if not df_c.empty and "relacion" in df_c.columns:
             relacion_opts += sorted(df_c["relacion"].dropna().unique().tolist())
-        filtro_relacion = st.selectbox("Mercado Referencia", relacion_opts)
+        filtro_relacion = st.selectbox("Mercado Referencia", relacion_opts, key="merc_relacion")
 
     with f4:
-        buscar_prod = st.text_input("🔍 Buscar mercado", placeholder="Nombre del mercado o producto...")
+        buscar_prod = st.text_input("🔍 Buscar mercado", placeholder="Nombre del mercado o producto...", key="merc_buscar")
 
     n_emparejados = al_alza_merc = a_la_baja_merc = 0
     ultimo = None
@@ -757,26 +770,26 @@ def render_monitor_productos():
                 df["fecha"].dropna().apply(lambda d: d.strftime("%Y-%m")).unique().tolist(),
                 reverse=True
             )
-        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los periodos...")
+        filtro_periodo = st.multiselect("Año-Mes", anio_mes_opts, placeholder="Todos los periodos...", key="prod_anio_mes")
     with f2:
         # Fecha — días con datos, orden cronológico descendente
         fecha_dia_opts = ["Todas"]
         if not df.empty and "fecha" in df.columns:
             fechas_unicas = sorted(df["fecha"].dropna().dt.normalize().unique(), reverse=True)
             fecha_dia_opts += [pd.Timestamp(f).strftime("%d/%m/%Y") for f in fechas_unicas]
-        filtro_fecha_dia = st.selectbox("Fecha", fecha_dia_opts)
+        filtro_fecha_dia = st.selectbox("Fecha", fecha_dia_opts, key="prod_fecha")
     with f3:
         cat_opts = ["Todas"]
         if not df.empty and "categoria" in df.columns:
             cat_opts += sorted(df["categoria"].dropna().unique().tolist())
-        filtro_cat = st.selectbox("Categoría", cat_opts)
+        filtro_cat = st.selectbox("Categoría", cat_opts, key="prod_categoria")
     with f4:
         tend_opts = ["Todas"]
         if not df.empty and "tendencia" in df.columns:
             tend_opts += sorted(df["tendencia"].dropna().unique().tolist())
-        filtro_tend = st.selectbox("Tendencia", tend_opts)
+        filtro_tend = st.selectbox("Tendencia", tend_opts, key="prod_tendencia")
     with f5:
-        buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...")
+        buscar_prod = st.text_input("🔍 Buscar producto", placeholder="Nombre del producto...", key="prod_buscar")
 
     ultimo_prod = None; n_productos_int = n_alza = n_baja = 0
     if not df.empty:
@@ -951,7 +964,7 @@ def render_monitor_productos():
         st.info("Sin datos disponibles con los filtros seleccionados")
 
 def render_alertas():
-    page_hero("🔔 Notificaciones", "Centro de Alertas", "Clima extremo y energía — actualizados automáticamente")
+    page_hero("🔔 Notificaciones", "Centro de Alertas", "Clima extremo y energía")
     df_clima = load("v_alertas_clima_extrema", order_col="fecha")
     df_energ = load("v_resumen_energia",       order_col="fecha")
 
