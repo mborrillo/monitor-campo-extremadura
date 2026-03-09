@@ -640,6 +640,14 @@ def render_mercados():
     else:
         df_directo = df_proxy = pd.DataFrame()
 
+    # Derivar zona_arbitraje desde diferencial_arbitraje si el campo no existe (vista vieja)
+    for _df in [df_directo, df_proxy]:
+        if not _df.empty and "zona_arbitraje" not in _df.columns and "diferencial_arbitraje" in _df.columns:
+            _difs = pd.to_numeric(_df["diferencial_arbitraje"], errors="coerce").fillna(0)
+            _df["zona_arbitraje"] = _difs.apply(
+                lambda v: "FAVORABLE" if v > 0.05 else ("DESFAVORABLE" if v < -0.02 else "EQUILIBRADO")
+            )
+
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -793,31 +801,49 @@ def render_mercados():
             local    = float(row.get("precio_local_kg", 0) or 0)
             intl_raw = row.get("precio_internacional_kg", None)
             intl     = float(intl_raw) if intl_raw is not None else 0.0
-            zona     = str(row.get("zona_arbitraje", "") or "").upper()
             tipo_ref = str(row.get("tipo_referencia", "") or "").upper()
             rec      = str(row.get("recomendacion_arbitraje", "") or "")
+            relacion = str(row.get("relacion", "") or row.get("activo_referencia", "")).lower()
             dif_pct_raw = row.get("diferencial_pct", None)
             dif_pct  = float(dif_pct_raw) if dif_pct_raw is not None else None
             sign     = "+" if dif > 0 else ""
 
-            # Pre-calcular celdas condicionales
-            es_directo = (tipo_ref == "DIRECTO" and intl_raw is not None)
-            intl_str   = f"{intl:.2f} €/kg" if es_directo else "— (proxy)"
-            badge_str  = f"{sign}{dif:.2f} €/kg" if es_directo else zona.title()
-            pct_span   = f'<span style="font-size:0.72rem;color:{{}};font-weight:600;">{sign}{dif_pct:.1f}%</span>' if (es_directo and dif_pct is not None) else ""
+            # Determinar zona: usar campo si existe, si no derivar del diferencial numérico
+            zona_raw = str(row.get("zona_arbitraje", "") or "").upper()
+            if zona_raw in ("FAVORABLE", "EQUILIBRADO", "DESFAVORABLE", "ACOMPAÑANDO", "DIVERGIENDO", "NEUTRO"):
+                zona = zona_raw
+            elif dif > 0.05:
+                zona = "FAVORABLE"
+            elif dif < -0.02:
+                zona = "DESFAVORABLE"
+            else:
+                zona = "EQUILIBRADO"
+
+            # Determinar si es comparativa directa de precio o proxy de tendencia
+            RELACIONES_DIRECTAS = {"trigo", "maiz", "soja", "arroz"}
+            if tipo_ref == "DIRECTO":
+                es_directo = True
+            elif tipo_ref == "PROXY":
+                es_directo = False
+            else:
+                es_directo = relacion in RELACIONES_DIRECTAS or intl_raw is not None
+
+            intl_str  = f"{intl:.2f} €/kg" if (es_directo and intl > 0) else "— (ref. proxy)"
+            badge_str = f"{sign}{dif:.2f} €/kg" if es_directo else zona.title()
+            pct_str   = f"{sign}{dif_pct:.1f}%" if (es_directo and dif_pct is not None) else ""
 
             # Color y flecha según zona
             if zona in ("FAVORABLE", "ACOMPAÑANDO"):
-                b_bg  = "#dcfce7"; b_col = "#15803d"
+                b_bg, b_col = "#dcfce7", "#15803d"
                 tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
             elif zona in ("DESFAVORABLE", "DIVERGIENDO"):
-                b_bg  = "#fee2e2"; b_col = "#b91c1c"
+                b_bg, b_col = "#fee2e2", "#b91c1c"
                 tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,3 8,9 13,6 20,13" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,13 20,13 20,8" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
             else:
-                b_bg  = "#fef3c7"; b_col = "#b45309"
-                tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,8 20,8" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                b_bg, b_col = "#fef3c7", "#b45309"
+                tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><line x1="2" y1="8" x2="20" y2="8" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/></svg>'
 
-            pct_span_final = pct_span.format(b_col) if pct_span else ""
+            pct_span_final = f'<span style="font-size:0.72rem;color:{b_col};font-weight:600;">{pct_str}</span>' if pct_str else ""
 
             st.markdown(f"""
             <div style="display:grid;grid-template-columns:1.2fr 2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
