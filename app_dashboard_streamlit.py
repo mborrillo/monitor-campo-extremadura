@@ -623,20 +623,27 @@ def render_mercados():
     # ── Gráfico diferencial de arbitraje: una barra vertical por producto ──
     section_header("📊", "Diferencial de Arbitraje (€/kg)", "Verde: precio local superior al internacional · Rojo: precio local inferior al internacional")
 
-    # Split DIRECTO / PROXY según tipo_referencia
-    # Si el campo no existe (vista vieja), clasificar por activo_referencia conocido
-    ACTIVOS_DIRECTO = {"trigo", "maiz", "soja", "arroz"}
-    if not df_vis.empty and "tipo_referencia" in df_vis.columns and df_vis["tipo_referencia"].notna().any():
-        df_directo = df_vis[df_vis["tipo_referencia"].str.upper() == "DIRECTO"].copy()
-        df_proxy   = df_vis[df_vis["tipo_referencia"].str.upper() == "PROXY"].copy()
-    elif not df_vis.empty and "activo_referencia" in df_vis.columns:
-        mask_dir   = df_vis["activo_referencia"].str.lower().isin(ACTIVOS_DIRECTO)
-        df_directo = df_vis[mask_dir].copy()
-        df_proxy   = df_vis[~mask_dir].copy()
-    elif not df_vis.empty and "relacion" in df_vis.columns:
-        mask_dir   = df_vis["relacion"].str.lower().isin(ACTIVOS_DIRECTO)
-        df_directo = df_vis[mask_dir].copy()
-        df_proxy   = df_vis[~mask_dir].copy()
+    # Split DIRECTO / PROXY
+    # Vista v3: tipo_referencia y relacion contienen "DIRECTO"/"PROXY"
+    # Vista vieja: relacion contiene nombre del activo ("Trigo","Maiz",...)
+    ACTIVOS_DIRECTO_NOMBRES = {"trigo", "maiz", "soja", "arroz"}
+
+    def _split_dir_proxy(df):
+        """Clasifica df en DIRECTO y PROXY de forma robusta."""
+        # 1. tipo_referencia con valores DIRECTO/PROXY
+        for col in ["tipo_referencia", "relacion"]:
+            if col in df.columns:
+                c = df[col].astype(str).str.upper().str.strip()
+                if c.isin({"DIRECTO", "PROXY"}).any():
+                    return df[c == "DIRECTO"].copy(), df[c == "PROXY"].copy()
+        # 2. Fallback: relacion = nombre de activo (vista vieja)
+        if "relacion" in df.columns:
+            mask = df["relacion"].astype(str).str.lower().isin(ACTIVOS_DIRECTO_NOMBRES)
+            return df[mask].copy(), df[~mask].copy()
+        return pd.DataFrame(), pd.DataFrame()
+
+    if not df_vis.empty:
+        df_directo, df_proxy = _split_dir_proxy(df_vis)
     else:
         df_directo = df_proxy = pd.DataFrame()
 
@@ -839,48 +846,49 @@ def render_mercados():
                 zona = "EQUILIBRADO"
 
             # Determinar si es comparativa directa de precio o proxy de tendencia
-            # Usar SOLO el nombre de la relacion — no el valor de precio_internacional_kg
-            # porque la vista vieja lo calcula para todos aunque sea un proxy conceptual
             RELACIONES_DIRECTAS = {"trigo", "maiz", "soja", "arroz"}
             if tipo_ref == "DIRECTO":
                 es_directo = True
             elif tipo_ref == "PROXY":
                 es_directo = False
+            elif relacion in ("directo",):
+                es_directo = True
+            elif relacion in ("proxy",):
+                es_directo = False
             else:
+                # Fallback vista vieja: relacion = nombre activo
                 es_directo = relacion in RELACIONES_DIRECTAS
 
             intl_str  = f"{intl:.2f} €/kg" if (es_directo and intl > 0) else "— (ref. proxy)"
             badge_str = f"{sign}{dif:.2f} €/kg" if es_directo else zona.title()
             pct_str   = f"{sign}{dif_pct:.1f}%" if (es_directo and dif_pct is not None) else ""
 
-            # Color y flecha según zona
+            # Indicador visual por zona — Unicode en lugar de SVG (Streamlit sanea SVG)
             if zona in ("FAVORABLE", "ACOMPAÑANDO"):
-                b_bg, b_col = "#dcfce7", "#15803d"
-                tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,13 8,7 13,10 20,3" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,3 20,3 20,8" fill="none" stroke="#27a05e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                b_bg, b_col, tend_icon = "#dcfce7", "#15803d", "▲"
             elif zona in ("DESFAVORABLE", "DIVERGIENDO"):
-                b_bg, b_col = "#fee2e2", "#b91c1c"
-                tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><polyline points="2,3 8,9 13,6 20,13" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15,13 20,13 20,8" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                b_bg, b_col, tend_icon = "#fee2e2", "#b91c1c", "▼"
             else:
-                b_bg, b_col = "#fef3c7", "#b45309"
-                tend_svg = '<svg width="22" height="16" viewBox="0 0 22 16"><line x1="2" y1="8" x2="20" y2="8" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/></svg>'
+                b_bg, b_col, tend_icon = "#fef3c7", "#b45309", "→"
 
             pct_span_final = f'<span style="font-size:0.72rem;color:{b_col};font-weight:600;">{pct_str}</span>' if pct_str else ""
 
-            st.markdown(f"""
-            <div style="display:grid;grid-template-columns:1.2fr 2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;
-                        align-items:center;padding:14px 20px;background:white;
-                        border:1px solid var(--border);border-top:none;margin-bottom:0;">
-                <span style="font-family:'DM Mono',monospace;font-size:0.8rem;color:#7aa98e;">{fecha_row_str}</span>
-                <span style="font-weight:600;font-size:0.9rem;color:#0d2b1a;">{row.get('producto','—')}</span>
-                <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#1a5c38;">{local:.2f} €/kg</span>
-                <span style="font-family:'DM Mono',monospace;font-size:0.88rem;color:#475569;">{intl_str}</span>
-                <span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                    <span style="background:{b_bg};color:{b_col};font-weight:700;font-size:0.82rem;padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;">{badge_str}</span>
-                    {pct_span_final}
-                </span>
-                <span style="display:inline-flex;align-items:center;">{tend_svg}</span>
-            </div>
-            """, unsafe_allow_html=True)
+            html_row = (
+                '<div style="display:grid;grid-template-columns:1.2fr 2fr 1.5fr 1.5fr 1.5fr 1fr;gap:8px;'
+                'align-items:center;padding:14px 20px;background:white;'
+                'border:1px solid #d1ead9;border-top:none;margin-bottom:0;">'
+                f'<span style="font-family:monospace;font-size:0.8rem;color:#7aa98e;">{fecha_row_str}</span>'
+                f'<span style="font-weight:600;font-size:0.9rem;color:#0d2b1a;">{row.get("producto","—")}</span>'
+                f'<span style="font-family:monospace;font-size:0.88rem;color:#1a5c38;">{local:.2f} €/kg</span>'
+                f'<span style="font-family:monospace;font-size:0.88rem;color:#475569;">{intl_str}</span>'
+                f'<span style="display:inline-flex;align-items:center;gap:6px;">'
+                f'<span style="background:{b_bg};color:{b_col};font-weight:700;font-size:0.82rem;'
+                f'padding:4px 12px;border-radius:20px;font-family:monospace;">{badge_str}</span>'
+                f'{pct_span_final}</span>'
+                f'<span style="font-size:1rem;font-weight:700;color:{b_col};">{tend_icon}</span>'
+                '</div>'
+            )
+            st.markdown(html_row, unsafe_allow_html=True)
 
     elif not df_p.empty:
         df_tab = df_p.copy()
