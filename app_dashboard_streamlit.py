@@ -1201,7 +1201,7 @@ def render_energia():
     if hoy is not None:
         cc1, cc2 = st.columns([1, 1])
         with cc1:
-            potencia_kw = st.number_input("Potencia de la bomba (CV)", min_value=0.5, max_value=500.0, value=10.0, step=0.5, key="en_potencia")
+            potencia_kw = st.number_input("Potencia de la bomba (kW)", min_value=0.5, max_value=500.0, value=10.0, step=0.5, key="en_potencia")
             horas_riego = st.number_input("Horas de riego previstas", min_value=0.5, max_value=24.0, value=4.0, step=0.5, key="en_horas")
 
         p_min_c = float(hoy.get("precio_min", 0) or 0)
@@ -1218,7 +1218,7 @@ def render_energia():
         with cc2:
             st.markdown(f"""
             <div style="background:white;border:1px solid var(--border);border-radius:16px;padding:20px 24px;box-shadow:0 2px 12px rgba(13,43,26,0.07);">
-                <p style="font-size:0.75rem;font-weight:700;color:#7aa98e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Estimación para {potencia_kw} CV · {horas_riego}h</p>
+                <p style="font-size:0.75rem;font-weight:700;color:#7aa98e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Estimación para {potencia_kw} kW · {horas_riego}h</p>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
                     <span style="font-size:0.88rem;color:#0d2b1a;">🟢 Hora Valle (hora {h_min_c}:00)</span>
                     <span style="font-family:'DM Mono',monospace;font-weight:700;color:#15803d;font-size:1rem;">{coste_valle:.3f} €</span>
