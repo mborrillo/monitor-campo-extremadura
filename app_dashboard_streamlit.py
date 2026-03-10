@@ -222,7 +222,7 @@ def render_sidebar():
             "📊  Monitor de Mercados",
             "🌐  Monitor de Productos",
             "⚡  Monitor de Energía",
-            "🔔  Alertas",
+            "🔔  Centro de Alertas",
             "⚙️  Configuración",
         ]
         default_idx = 0
@@ -364,26 +364,31 @@ def render_mapa():
         st.warning("Sin datos de localización en v_mapa_operaciones")
         return
 
-    f1, f2, f3, f4 = st.columns([1, 1, 1, 2])
+    f1, f2, f3, f4, f5 = st.columns([1, 1, 1, 1, 2])
     with f1:
+        prov_opts = sorted(df["provincia"].dropna().unique().tolist()) if "provincia" in df.columns else []
+        filtro_provincia = st.multiselect("Provincia", prov_opts, placeholder="Todas...", key="mapa_provincia")
+    with f2:
         comarca_opts = ["Todas"]
         if "comarca" in df.columns:
             comarca_opts += sorted(df["comarca"].dropna().unique().tolist())
         filtro_comarca = st.multiselect("Comarca", [o for o in comarca_opts if o != "Todas"], placeholder="Todas las comarcas...", key="mapa_comarca")
-    with f2:
+    with f3:
         tratamiento_opts = ["Todos"]
         if "recomendacion_tratamiento" in df.columns:
             tratamiento_opts += sorted(df["recomendacion_tratamiento"].dropna().unique().tolist())
         filtro_trat = st.multiselect("Tratamiento", [o for o in tratamiento_opts if o != "Todos"], placeholder="Todos...", key="mapa_tratamiento")
-    with f3:
+    with f4:
         riego_opts = ["Todos"]
         if "recomendacion_riego" in df.columns:
             riego_opts += sorted(df["recomendacion_riego"].dropna().unique().tolist())
         filtro_riego = st.multiselect("Riego", [o for o in riego_opts if o != "Todos"], placeholder="Todos...", key="mapa_riego")
-    with f4:
+    with f5:
         buscar = st.text_input("🔍 Buscar estación", placeholder="Nombre de estación...", key="mapa_buscar")
 
     df_filtered = df.copy()
+    if filtro_provincia and "provincia" in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered["provincia"].isin(filtro_provincia)]
     if filtro_comarca and "comarca" in df_filtered.columns:
         df_filtered = df_filtered[df_filtered["comarca"].isin(filtro_comarca)]
     if filtro_trat and "recomendacion_tratamiento" in df_filtered.columns:
@@ -1388,7 +1393,7 @@ def render_alertas():
             if not df_clima.empty:
                 import io as _io
                 _out_cl = _io.BytesIO()
-                _cols_cl = [c for c in ["fecha","estacion","temp_max","temp_min","alerta_riesgo"] if c in df_clima.columns]
+                _cols_cl = [c for c in ["fecha","estacion","provincia","comarca","temp_max","temp_min","alerta_riesgo"] if c in df_clima.columns]
                 _df_cl_exp = df_clima[_cols_cl].copy()
                 if "fecha" in _df_cl_exp.columns:
                     _df_cl_exp["fecha"] = pd.to_datetime(_df_cl_exp["fecha"]).dt.strftime("%d/%m/%Y")
@@ -1418,6 +1423,7 @@ def render_alertas():
                     <div class="alert-dot {dot}"></div>
                     <div style="flex:1">
                         <div class="alert-title">{row.get('estacion','—')}</div>
+                        <div class="alert-desc" style="color:#7aa98e;">📍 {row.get('provincia','—')} · {row.get('comarca','—')}</div>
                         <div class="alert-desc">🌡️ Máx: <b>{row.get('temp_max','—')}°C</b> | Mín: <b>{row.get('temp_min','—')}°C</b></div>
                         <div class="alert-desc" style="margin-top:3px;">{alerta}</div>
                         <div class="alert-time">📅 {fecha_str}</div>
@@ -1553,7 +1559,7 @@ def main():
         elif "Mercados"    in page: render_mercados()
         elif "Productos"   in page: render_monitor_productos()
         elif "Energía"     in page: render_energia()
-        elif "Alertas"     in page: render_alertas()
+        elif "Centro de Alertas" in page: render_alertas()
         elif "Configuraci" in page: render_configuracion()
     except Exception as e:
         st.error(f"Error al cargar la sección: {e}")
