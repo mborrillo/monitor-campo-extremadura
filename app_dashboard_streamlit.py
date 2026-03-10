@@ -1212,7 +1212,7 @@ def render_energia():
     if hoy is not None:
         cc1, cc2 = st.columns([1, 1])
         with cc1:
-            potencia_kw = st.number_input("Potencia de la bomba (kW)", min_value=0.5, max_value=500.0, value=10.0, step=0.5, key="en_potencia")
+            potencia_kw = st.number_input("Potencia de la bomba (CV)", min_value=0.5, max_value=500.0, value=10.0, step=0.5, key="en_potencia")
             horas_riego = st.number_input("Horas de riego previstas", min_value=0.5, max_value=24.0, value=4.0, step=0.5, key="en_horas")
 
         p_min_c = float(hoy.get("precio_min", 0) or 0)
@@ -1229,7 +1229,7 @@ def render_energia():
         with cc2:
             st.markdown(f"""
             <div style="background:white;border:1px solid var(--border);border-radius:16px;padding:20px 24px;box-shadow:0 2px 12px rgba(13,43,26,0.07);">
-                <p style="font-size:0.75rem;font-weight:700;color:#7aa98e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Estimación para {potencia_kw} kW · {horas_riego}h</p>
+                <p style="font-size:0.75rem;font-weight:700;color:#7aa98e;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Estimación para {potencia_kw} CV · {horas_riego}h</p>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
                     <span style="font-size:0.88rem;color:#0d2b1a;">🟢 Hora Valle (hora {h_min_c}:00)</span>
                     <span style="font-family:'DM Mono',monospace;font-weight:700;color:#15803d;font-size:1rem;">{coste_valle:.3f} €</span>
@@ -1380,7 +1380,25 @@ def render_alertas():
     col_cl, col_en = st.columns(2)
 
     with col_cl:
-        section_header("🌩️", "Alertas de Clima Extremo", "v_alertas_clima_extrema")
+        # Header + Excel en la misma línea
+        hdr_cl = st.columns([0.72, 0.28])
+        with hdr_cl[0]:
+            section_header("🌩️", "Alertas de Clima Extremo", "v_alertas_clima_extrema")
+        with hdr_cl[1]:
+            if not df_clima.empty:
+                import io as _io
+                _out_cl = _io.BytesIO()
+                _cols_cl = [c for c in ["fecha","estacion","temp_max","temp_min","alerta_riesgo"] if c in df_clima.columns]
+                _df_cl_exp = df_clima[_cols_cl].copy()
+                if "fecha" in _df_cl_exp.columns:
+                    _df_cl_exp["fecha"] = pd.to_datetime(_df_cl_exp["fecha"]).dt.strftime("%d/%m/%Y")
+                with pd.ExcelWriter(_out_cl, engine="openpyxl") as _w:
+                    _df_cl_exp.to_excel(_w, index=False, sheet_name="Alertas Clima")
+                st.download_button("📥 Excel", data=_out_cl.getvalue(),
+                    file_name=f"alertas_clima_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, key="excel_alertas_clima")
+
         if not df_clima.empty:
             df_c = df_clima.copy()
             df_c["fecha"] = pd.to_datetime(df_c["fecha"])
@@ -1406,18 +1424,29 @@ def render_alertas():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-            if len(df_c) > 3:
-                df_plot = df_c.sort_values("fecha").tail(30)
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df_plot["fecha"], y=df_plot["temp_max"], name="Máx", line=dict(color="#ef4444", width=2), fill="tonexty"))
-                fig.add_trace(go.Scatter(x=df_plot["fecha"], y=df_plot["temp_min"], name="Mín", line=dict(color="#3b82f6", width=2)))
-                fig.update_layout(height=200, **CHART_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Sin alertas de clima disponibles")
 
     with col_en:
-        section_header("⚡", "Precio Energía", "v_resumen_energia — media diaria €/kWh")
+        # Header + Excel en la misma línea
+        hdr_en = st.columns([0.72, 0.28])
+        with hdr_en[0]:
+            section_header("⚡", "Precio Energía", "v_resumen_energia — media diaria €/kWh")
+        with hdr_en[1]:
+            if not df_energ.empty:
+                import io as _io
+                _out_en = _io.BytesIO()
+                _cols_en = [c for c in ["fecha","precio_medio","precio_min","hora_min","precio_max","hora_max","tramo_mayoria","var_per_prev","estado_costo","recomendacion_consumo"] if c in df_energ.columns]
+                _df_en_exp = df_energ[_cols_en].copy()
+                if "fecha" in _df_en_exp.columns:
+                    _df_en_exp["fecha"] = pd.to_datetime(_df_en_exp["fecha"]).dt.strftime("%d/%m/%Y")
+                with pd.ExcelWriter(_out_en, engine="openpyxl") as _w:
+                    _df_en_exp.to_excel(_w, index=False, sheet_name="Precio Energía")
+                st.download_button("📥 Excel", data=_out_en.getvalue(),
+                    file_name=f"precio_energia_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True, key="excel_alertas_energia")
+
         if not df_energ.empty:
             df_e = df_energ.copy()
             df_e["fecha"] = pd.to_datetime(df_e["fecha"])
@@ -1447,24 +1476,6 @@ def render_alertas():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-            # Gráfico evolución precio medio diario
-            df_plot = df_e.sort_values("fecha").tail(30)
-            if len(df_plot) > 1 and "precio_medio" in df_plot.columns:
-                colores_b = df_plot["tramo_mayoria"].apply(
-                    lambda t: "#ef4444" if "punta" in str(t).lower()
-                    else "#f59e0b" if "llano" in str(t).lower()
-                    else "#27a05e"
-                ) if "tramo_mayoria" in df_plot.columns else ["#27a05e"] * len(df_plot)
-                fig2 = go.Figure(go.Bar(
-                    x=df_plot["fecha"], y=df_plot["precio_medio"],
-                    marker_color=colores_b, opacity=0.85,
-                    hovertemplate="%{x|%d/%m}<br>%{y:.4f} €/kWh<extra></extra>"
-                ))
-                layout2 = {**CHART_LAYOUT}
-                layout2["xaxis"] = dict(showgrid=False, color="#7aa98e", title="Fecha")
-                layout2["yaxis"] = dict(gridcolor="#e8f5ee", color="#7aa98e", title="€/kWh medio")
-                fig2.update_layout(height=200, **layout2)
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
         else:
             st.info("Sin datos de energía disponibles")
 
