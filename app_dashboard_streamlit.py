@@ -365,27 +365,37 @@ def render_mapa():
         return
 
     f1, f2, f3, f4, f5 = st.columns([1, 1, 1, 1, 2])
+
+    # ── Filtros en cascada: cada nivel restringe las opciones del siguiente ──
     with f1:
         prov_opts = sorted(df["provincia"].dropna().unique().tolist()) if "provincia" in df.columns else []
         filtro_provincia = st.multiselect("Provincia", prov_opts, placeholder="Todas...", key="mapa_provincia")
+
+    # Aplicar provincia para restringir opciones de comarca
+    df_tras_prov = df[df["provincia"].isin(filtro_provincia)] if (filtro_provincia and "provincia" in df.columns) else df
+
     with f2:
-        comarca_opts = ["Todas"]
-        if "comarca" in df.columns:
-            comarca_opts += sorted(df["comarca"].dropna().unique().tolist())
-        filtro_comarca = st.multiselect("Comarca", [o for o in comarca_opts if o != "Todas"], placeholder="Todas las comarcas...", key="mapa_comarca")
+        comarca_opts = sorted(df_tras_prov["comarca"].dropna().unique().tolist()) if "comarca" in df_tras_prov.columns else []
+        filtro_comarca = st.multiselect("Comarca", comarca_opts, placeholder="Todas las comarcas...", key="mapa_comarca")
+
+    # Aplicar comarca para restringir opciones de tratamiento y riego
+    df_tras_comarca = df_tras_prov[df_tras_prov["comarca"].isin(filtro_comarca)] if (filtro_comarca and "comarca" in df_tras_prov.columns) else df_tras_prov
+
     with f3:
-        tratamiento_opts = ["Todos"]
-        if "recomendacion_tratamiento" in df.columns:
-            tratamiento_opts += sorted(df["recomendacion_tratamiento"].dropna().unique().tolist())
-        filtro_trat = st.multiselect("Tratamiento", [o for o in tratamiento_opts if o != "Todos"], placeholder="Todos...", key="mapa_tratamiento")
+        trat_opts = sorted(df_tras_comarca["recomendacion_tratamiento"].dropna().unique().tolist()) if "recomendacion_tratamiento" in df_tras_comarca.columns else []
+        filtro_trat = st.multiselect("Tratamiento", trat_opts, placeholder="Todos...", key="mapa_tratamiento")
+
+    # Aplicar tratamiento para restringir opciones de riego
+    df_tras_trat = df_tras_comarca[df_tras_comarca["recomendacion_tratamiento"].isin(filtro_trat)] if (filtro_trat and "recomendacion_tratamiento" in df_tras_comarca.columns) else df_tras_comarca
+
     with f4:
-        riego_opts = ["Todos"]
-        if "recomendacion_riego" in df.columns:
-            riego_opts += sorted(df["recomendacion_riego"].dropna().unique().tolist())
-        filtro_riego = st.multiselect("Riego", [o for o in riego_opts if o != "Todos"], placeholder="Todos...", key="mapa_riego")
+        riego_opts = sorted(df_tras_trat["recomendacion_riego"].dropna().unique().tolist()) if "recomendacion_riego" in df_tras_trat.columns else []
+        filtro_riego = st.multiselect("Riego", riego_opts, placeholder="Todos...", key="mapa_riego")
+
     with f5:
         buscar = st.text_input("🔍 Buscar estación", placeholder="Nombre de estación...", key="mapa_buscar")
 
+    # ── Aplicar todos los filtros al dataset final ──
     df_filtered = df.copy()
     if filtro_provincia and "provincia" in df_filtered.columns:
         df_filtered = df_filtered[df_filtered["provincia"].isin(filtro_provincia)]
@@ -462,7 +472,7 @@ def render_mapa():
 
     if not df_filtered.empty:
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        cols_show = [c for c in ["estacion", "comarca", "temp_actual", "humedad", "viento_vel", "precipitacion",
+        cols_show = [c for c in ["estacion", "provincia", "comarca", "temp_actual", "humedad", "viento_vel", "precipitacion",
                                   "recomendacion_tratamiento", "recomendacion_riego", "luz_estado"] if c in df_filtered.columns]
         df_tabla_mapa = df_filtered[cols_show].sort_values("estacion").reset_index(drop=True)
 
@@ -470,12 +480,13 @@ def render_mapa():
         with hdr_mapa[0]:
             st.markdown('<div style="width:40px;height:40px;background:linear-gradient(135deg,#27a05e,#3dbd76);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(39,160,94,0.3);margin-top:2px;">📋</div>', unsafe_allow_html=True)
         with hdr_mapa[1]:
-            st.markdown(f'<div style="padding-top:4px;"><p style="font-size:1.25rem;font-weight:700;color:#0d2b1a;margin:0;">Estaciones filtradas</p><p style="font-size:0.8rem;color:#7aa98e;margin:0;">{len(df_tabla_mapa)} estaciones seleccionadas</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="padding-top:4px;"><p style="font-size:1.25rem;font-weight:700;color:#0d2b1a;margin:0;">Detalle de Estaciones</p><p style="font-size:0.8rem;color:#7aa98e;margin:0;">{len(df_tabla_mapa)} estaciones seleccionadas</p></div>', unsafe_allow_html=True)
         with hdr_mapa[2]:
             import io
             output_mapa = io.BytesIO()
-            col_labels_mapa = {"estacion": "Estación", "comarca": "Comarca", "temp_actual": "Temp. Actual (°C)",
-                               "humedad": "Humedad (%)", "viento_vel": "Viento (km/h)", "precipitacion": "Precipitación (mm)",
+            col_labels_mapa = {"estacion": "Estación", "provincia": "Provincia", "comarca": "Comarca",
+                               "temp_actual": "Temp. Actual (°C)", "humedad": "Humedad (%)",
+                               "viento_vel": "Viento (km/h)", "precipitacion": "Precipitación (mm)",
                                "recomendacion_tratamiento": "Rec. Tratamiento", "recomendacion_riego": "Rec. Riego", "luz_estado": "Estado Luz"}
             df_export_mapa = df_tabla_mapa.rename(columns=col_labels_mapa)
             with pd.ExcelWriter(output_mapa, engine="openpyxl") as writer:
@@ -491,9 +502,10 @@ def render_mapa():
 
         st.markdown("<div style='border-bottom:2px solid #d1ead9;margin-bottom:12px;'></div>", unsafe_allow_html=True)
 
-        col_labels_h = {"estacion": "Estación", "comarca": "Comarca", "temp_actual": "Temp (°C)",
-                        "humedad": "Humedad", "viento_vel": "Viento", "precipitacion": "Lluvia",
-                        "recomendacion_tratamiento": "Tratamiento", "recomendacion_riego": "Riego", "luz_estado": "Luz"}
+        col_labels_h = {"estacion": "Estación", "provincia": "Provincia", "comarca": "Comarca",
+                        "temp_actual": "Temp (°C)", "humedad": "Humedad", "viento_vel": "Viento",
+                        "precipitacion": "Lluvia", "recomendacion_tratamiento": "Tratamiento",
+                        "recomendacion_riego": "Riego", "luz_estado": "Luz"}
         col_widths_mapa = "1.5fr 1.2fr " + " ".join(["1fr"] * (len(cols_show) - 2))
         header_mapa_html = "".join([f'<span style="font-size:0.75rem;font-weight:700;color:#0d2b1a;text-transform:uppercase;letter-spacing:0.06em;">{col_labels_h.get(c, c)}</span>' for c in cols_show])
         st.markdown(f"""
@@ -516,6 +528,8 @@ def render_mapa():
             for c in cols_show:
                 if c == "estacion":
                     cells_mapa.append(f'<span style="font-weight:600;font-size:0.88rem;color:#0d2b1a;">{row.get("estacion","—")}</span>')
+                elif c == "provincia":
+                    cells_mapa.append(f'<span style="font-size:0.82rem;color:#0d2b1a;font-weight:600;">{row.get("provincia","—")}</span>')
                 elif c == "comarca":
                     cells_mapa.append(f'<span style="font-size:0.82rem;color:#475569;font-weight:500;">{row.get("comarca","—")}</span>')
                 elif c in ["temp_actual", "humedad", "viento_vel", "precipitacion"]:
