@@ -1426,15 +1426,18 @@ def render_energia():
             tickcolor="#7aa98e",
             dtick=86400000,           # un tick por día
         )
+        # Rango Y: padding del 15% arriba y abajo para que las cajas no se corten
+        _y_min = min(p_min) if p_min else 0
+        _y_max = max(p_max) if p_max else 1
+        _pad   = (_y_max - _y_min) * 0.15 or 0.01
         layout_en["yaxis"] = dict(
+            range=[max(0, _y_min - _pad), _y_max + _pad],
             gridcolor="#e8f5ee",
             gridwidth=0.8,
             title=dict(text="€/kWh", font=dict(size=12, color="#0d2b1a"), standoff=10),
             tickfont=dict(size=10, color="#0d2b1a", family="DM Mono, monospace"),
             tickformat=".4f",
-            zeroline=True,
-            zerolinecolor="#d1ead9",
-            zerolinewidth=1,
+            zeroline=False,
             linecolor="#d1ead9",
         )
         layout_en["legend"] = dict(
